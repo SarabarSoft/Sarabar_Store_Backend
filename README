@@ -3,3 +3,7 @@ PORT=5050
 MONGO_URI=mongodb+srv://sarabartesting25_db_user:LPwzaRuj7EtxI30f@sarabarstore.ljl65ut.mongodb.net/
 
 # mongodb://localhost:27017/sarabarDB
+
+
+Live Base URL:
+https://sarabar-store-backend.onrender.com
