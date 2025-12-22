@@ -28,6 +28,8 @@ app.use('/api/products', require('./routes/product'));
 app.use('/api/customer', require('./routes/CustomerRoutes'));
 app.use('/api/orders', require('./routes/Order'));
 app.use('/api/settings', require('./routes/SettingRoutes'));
+app.use('/api/payment', require('./routes/paymentRoutes'));
+
 
 const PORT = process.env.PORT || 5050;
 app.listen(PORT, () =>
