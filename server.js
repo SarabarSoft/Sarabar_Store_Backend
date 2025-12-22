@@ -1,46 +1,35 @@
 const express = require('express');
 const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
+const adminAuthRoutes = require('./routes/AdminSignupRoutes');
 require('dotenv').config();
+
 const app = express();
 const cors = require('cors');
-
-app.use((req, res, next) => {
-  console.log("Request received:", req.method, req.url);
-  next();
-});
+const authMiddleware = require('./middleware/authtoken');
 
 app.use(cors());
-
-// Middleware
 app.use(express.json());
 
 // Connect to MongoDB
 connectDB();
 
-// Routes
+// 🔓 PUBLIC ROUTES (NO TOKEN)
+app.use('/api/admin', adminAuthRoutes);
 app.use('/api/auth', authRoutes);
 
-const categoryRoutes = require("./routes/Category");
-app.use("/api/category", categoryRoutes);
+// 🔐 TOKEN MIDDLEWARE (AFTER PUBLIC ROUTES)
+app.use(authMiddleware);
 
+// 🔒 PROTECTED ROUTES
+app.use('/api/category', require('./routes/Category'));
+app.use('/api/subcategory', require('./routes/SubCategory'));
+app.use('/api/products', require('./routes/product'));
+app.use('/api/customer', require('./routes/CustomerRoutes'));
+app.use('/api/orders', require('./routes/Order'));
+app.use('/api/settings', require('./routes/SettingRoutes'));
 
-
-const subcategoryRoutes = require("./routes/SubCategory");
-app.use("/api/subcategory", subcategoryRoutes);
-
-const productRoutes = require("./routes/product");
-app.use("/api/products", productRoutes)
-
-const userRoutes = require('./routes/CustomerRoutes');
-app.use('/api/customer', userRoutes);
-
-const orderRoutes = require('./routes/Order');
-app.use('/api/orders', orderRoutes);
-
-const settingRoutes = require('./routes/SettingRoutes');
-app.use('/api/settings', settingRoutes);
-
-// Server Listening
 const PORT = process.env.PORT || 5050;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () =>
+  console.log(`Server running on port ${PORT}`)
+);
