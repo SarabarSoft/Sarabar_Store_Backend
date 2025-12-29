@@ -119,6 +119,45 @@ router.put("/:id", upload.single("image"), async (req, res) => {
   }
 });
 
+
+/**
+ * REMOVE CATEGORY IMAGE ONLY
+ * DELETE /api/category/:id/image
+ */
+router.delete("/:id/image", async (req, res) => {
+  try {
+    const category = await Category.findById(req.params.id);
+
+    if (!category)
+      return res.status(404).json({ message: "Category not found" });
+
+    if (!category.imageUrl)
+      return res.status(400).json({ message: "Category image already removed" });
+
+    // Extract public_id from Cloudinary URL
+    const publicId = category.imageUrl
+      .split("/")
+      .slice(-2)
+      .join("/")
+      .split(".")[0];
+
+    // Delete image from Cloudinary
+    await cloudinary.uploader.destroy(publicId);
+
+    // Remove image from DB
+    category.imageUrl = null;
+    await category.save();
+
+    res.json({
+      success: true,
+      message: "Category image removed successfully",
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
 /**
  * DELETE CATEGORY
  * DELETE /api/category/:id
@@ -137,5 +176,8 @@ router.delete("/:id", async (req, res) => {
     res.status(500).json({ message: "Server error", error: err.message });
   }
 });
+
+
+
 
 module.exports = router;

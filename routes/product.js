@@ -160,6 +160,54 @@ router.get('/all', async (req, res) => {
   }
 });
 
+/* ======================================================
+   DELETE PRODUCT IMAGE ONLY
+   DELETE /api/products/image
+====================================================== */
+router.delete('/image', async (req, res) => {
+  try {
+    const { productId, imageField } = req.body;
+
+    const allowedFields = [
+      'image_url1',
+      'image_url2',
+      'image_url3',
+      'image_url4'
+    ];
+
+    if (!allowedFields.includes(imageField)) {
+      return res.status(400).json({ message: 'Invalid image field' });
+    }
+
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    const publicIdField = `${imageField}_public_id`;
+    const publicId = product[publicIdField];
+
+    if (!publicId) {
+      return res.status(400).json({ message: 'Image already removed' });
+    }
+
+    // 🔥 Delete from Cloudinary
+    await cloudinary.uploader.destroy(publicId);
+
+    // 🔥 Clear DB fields
+    product[imageField] = null;
+    product[publicIdField] = null;
+    await product.save();
+
+    res.json({
+      success: true,
+      message: 'Product image deleted successfully'
+    });
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 /* ======================================================
    GET SINGLE PRODUCT
