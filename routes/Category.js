@@ -162,20 +162,56 @@ router.delete("/:id/image", async (req, res) => {
  * DELETE CATEGORY
  * DELETE /api/category/:id
  */
+// router.delete("/:id", async (req, res) => {
+//   try {
+//     const category = await Category.findByIdAndDelete(req.params.id);
+//     if (!category) return res.status(404).json({ message: "Category not found" });
+
+//     res.json({
+//       success: true,
+//       message: "Category deleted successfully",
+//       data: category,
+//     });
+//   } catch (err) {
+//     res.status(500).json({ message: "Server error", error: err.message });
+//   }
+// });
+/**
+ * DELETE CATEGORY + IMAGE
+ * DELETE /api/category/:id
+ */
 router.delete("/:id", async (req, res) => {
   try {
-    const category = await Category.findByIdAndDelete(req.params.id);
-    if (!category) return res.status(404).json({ message: "Category not found" });
+    // 1️⃣ Find category first
+    const category = await Category.findById(req.params.id);
+
+    if (!category)
+      return res.status(404).json({ message: "Category not found" });
+
+    // 2️⃣ Delete image from Cloudinary (if exists)
+    if (category.imageUrl) {
+      const publicId = category.imageUrl
+        .split("/")
+        .slice(-2)
+        .join("/")
+        .split(".")[0];
+
+      await cloudinary.uploader.destroy(publicId);
+    }
+
+    // 3️⃣ Delete category from DB
+    await Category.findByIdAndDelete(req.params.id);
 
     res.json({
       success: true,
-      message: "Category deleted successfully",
-      data: category,
+      message: "Category and image deleted successfully",
     });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 });
+
 
 
 
