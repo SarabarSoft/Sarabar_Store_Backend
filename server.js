@@ -19,16 +19,16 @@ app.use('/api/admin', adminAuthRoutes);
 app.use('/api/auth', authRoutes);
 
 // 🔐 TOKEN MIDDLEWARE (AFTER PUBLIC ROUTES)
-app.use(authMiddleware);
+//app.use(authMiddleware);
 
 // 🔒 PROTECTED ROUTES
-app.use('/api/category', require('./routes/Category'));
-app.use('/api/subcategory', require('./routes/SubCategory'));
-app.use('/api/products', require('./routes/product'));
-app.use('/api/customer', require('./routes/CustomerRoutes'));
-app.use('/api/orders', require('./routes/Order'));
-app.use('/api/settings', require('./routes/SettingRoutes'));
-app.use('/api/payment', require('./routes/paymentRoutes'));
+app.use('/api/category', authMiddleware,require('./routes/Category'));
+app.use('/api/subcategory', authMiddleware, require('./routes/SubCategory'));
+app.use('/api/products', authMiddleware, require('./routes/product'));
+app.use('/api/customer', authMiddleware, require('./routes/CustomerRoutes'));
+app.use('/api/orders', authMiddleware, require('./routes/Order'));
+app.use('/api/settings', authMiddleware, require('./routes/SettingRoutes'));
+app.use('/api/payment', authMiddleware, require('./routes/paymentRoutes'));
 
 
 const PORT = process.env.PORT || 5050;
