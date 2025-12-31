@@ -29,6 +29,9 @@ app.use('/api/customer', authMiddleware, require('./routes/CustomerRoutes'));
 app.use('/api/orders', authMiddleware, require('./routes/Order'));
 app.use('/api/settings', authMiddleware, require('./routes/SettingRoutes'));
 app.use('/api/payment', authMiddleware, require('./routes/paymentRoutes'));
+//app.use('/api/banner', authMiddleware,require('./routes/BannerImageRoutes'));
+app.use("/api/banner", authMiddleware,require("./routes/BannerImageRoutes"));
+
 
 
 const PORT = process.env.PORT || 5050;
