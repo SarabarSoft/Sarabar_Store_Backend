@@ -148,7 +148,8 @@ router.get('/by-category/:categoryId', async (req, res) => {
     const products = await Product.find({
       categoryId: new mongoose.Types.ObjectId(categoryId)
     })
-      .populate('sub_categoryId', 'subcategoryName')
+      .populate('categoryId', 'categoryName')        // category name
+  .populate('sub_categoryId', 'subcategoryName') // subcategory name
       .sort({ createdAt: -1 });
 
     res.json({
@@ -165,5 +166,41 @@ router.get('/by-category/:categoryId', async (req, res) => {
   }
 });
 
+/* ======================================================
+ GET products by categoryId and sub_categoryId
+====================================================== */
+router.get("/by-category-subcategory/:categoryId/:subCategoryId", async (req, res) => {
+  try {
+    const { categoryId, subCategoryId } = req.params;
+
+    // Validate ObjectIds
+    if (!mongoose.Types.ObjectId.isValid(categoryId) || !mongoose.Types.ObjectId.isValid(subCategoryId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid categoryId or subCategoryId"
+      });
+    }
+
+    const products = await Product.find({
+      categoryId: new mongoose.Types.ObjectId(categoryId),
+      sub_categoryId: new mongoose.Types.ObjectId(subCategoryId)
+    })
+      .populate("categoryId", "categoryName")          // populate category name
+      .populate("sub_categoryId", "subcategoryName")   // populate subcategory name
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      count: products.length,
+      data: products
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
 
 module.exports = router;

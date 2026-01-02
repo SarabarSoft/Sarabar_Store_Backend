@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const Subcategory = require("../models/Subcategory");
 const Category = require("../models/Category");
-
+const mongoose = require('mongoose');
 
 // ------------------------------------
 // ✅ ADD SUBCATEGORY
@@ -25,8 +25,11 @@ router.post("/add", async (req, res) => {
       return res.status(400).json({ message: "Subcategory already exists" });
     }
 
-    const subcategory = new Subcategory({ categoryId, subcategoryName });
-    await subcategory.save();
+    const subcategory = new Subcategory({
+  categoryId: new mongoose.Types.ObjectId(categoryId),
+  subcategoryName
+});
+await subcategory.save();
 
     res.status(200).json({
       message: "Subcategory added successfully",
