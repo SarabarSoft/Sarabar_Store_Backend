@@ -19,8 +19,8 @@ connectDB();
 app.use('/api/admin', adminAuthRoutes);
 app.use('/api/auth', authRoutes);
 
-// 🔐 TOKEN MIDDLEWARE (AFTER PUBLIC ROUTES)
-//app.use(authMiddleware);
+app.use('/api/mobile',require('./routes/categoryMobileRoute'));
+app.use('/api/mobile/products', require('./routes/productMobileRoutes'));
 
 // 🔒 PROTECTED ROUTES
 app.use('/api/category', authMiddleware,require('./routes/Category'));

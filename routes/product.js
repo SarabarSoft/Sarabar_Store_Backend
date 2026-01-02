@@ -4,7 +4,7 @@ const Product = require('../models/Product');
 const cloudinary = require("../config/cloudinary");
 const multer = require("multer");
 const fs = require("fs");
-
+const mongoose = require('mongoose');
 
 // Multer setup for file uploads
 const storage = multer.diskStorage({});
@@ -30,8 +30,10 @@ router.post('/add', async (req, res) => {
       productname,
       size,
       product_details,
-      categoryId,
-      sub_categoryId,
+      //categoryId,
+      //sub_categoryId,
+      categoryId: categoryId ? new mongoose.Types.ObjectId(categoryId) : null,
+      sub_categoryId: sub_categoryId ? new mongoose.Types.ObjectId(sub_categoryId) : null,
       mrp,
       store_price,
       offer,

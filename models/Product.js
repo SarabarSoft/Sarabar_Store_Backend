@@ -4,8 +4,18 @@ const productSchema = new mongoose.Schema({
   productname: String,
   size: String,
   product_details: String,
-  categoryId: String,
-  sub_categoryId: String,
+  //categoryId: String,
+   categoryId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Category',   // 🔹 important
+      //required: true
+    },
+  //sub_categoryId: String,
+   sub_categoryId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Subcategory', // 🔹 important
+      //required: true
+    },
   mrp: Number,
   store_price: Number,
   offer: String,
