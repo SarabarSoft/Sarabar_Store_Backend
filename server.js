@@ -22,6 +22,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/mobile',require('./routes/categoryMobileRoute'));
 app.use('/api/mobile/products', require('./routes/productMobileRoutes'));
 app.use('/api/mobile/auth', require('./routes/mobileAuthRoutes'));
+app.use('/api/mobile/orders', require('./routes/mobileOrderRoutes'));
 
 // 🔒 PROTECTED ROUTES
 app.use('/api/category', authMiddleware,require('./routes/Category'));
@@ -31,6 +32,7 @@ app.use('/api/customer', authMiddleware, require('./routes/CustomerRoutes'));
 app.use('/api/settings', authMiddleware, require('./routes/SettingRoutes'));
 app.use("/api/banner", authMiddleware,require("./routes/BannerImageRoutes"));
 app.use("/api/admin", authMiddleware,require("./routes/adminChangePasswordRoutes"));
+app.use("/api/admin", authMiddleware,require("./routes/adminOrderRoutes"));
 
 
 
