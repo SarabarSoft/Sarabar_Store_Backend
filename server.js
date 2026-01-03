@@ -28,9 +28,7 @@ app.use('/api/category', authMiddleware,require('./routes/Category'));
 app.use('/api/subcategory', authMiddleware, require('./routes/SubCategory'));
 app.use('/api/products', authMiddleware, require('./routes/product'));
 app.use('/api/customer', authMiddleware, require('./routes/CustomerRoutes'));
-app.use('/api/orders', authMiddleware, require('./routes/Order'));
 app.use('/api/settings', authMiddleware, require('./routes/SettingRoutes'));
-app.use('/api/payment', authMiddleware, require('./routes/paymentRoutes'));
 app.use("/api/banner", authMiddleware,require("./routes/BannerImageRoutes"));
 app.use("/api/admin", authMiddleware,require("./routes/adminChangePasswordRoutes"));
 

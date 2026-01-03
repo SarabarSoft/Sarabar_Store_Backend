@@ -15,7 +15,7 @@ router.post('/check-email', async (req, res) => {
       });
     }
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).lean();
 
     // ✅ USER EXISTS
     if (user) {
@@ -27,12 +27,20 @@ router.post('/check-email', async (req, res) => {
           id: user._id,
           fullName: user.fullName,
           email: user.email,
-          mobile: user.mobile
+          mobile: user.mobile,
+          doorNumber: user.doorNumber,
+          streetArea: user.streetArea,
+          landmark: user.landmark,
+          state: user.state,
+          city: user.city,
+          pincode: user.pincode,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt
         }
       });
     }
 
-    // ✅ NEW USER
+    // 🆕 NEW USER
     return res.status(200).json({
       success: true,
       isNewUser: true,
@@ -47,35 +55,64 @@ router.post('/check-email', async (req, res) => {
   }
 });
 
+
 // SIGNUP OR LOGIN
 router.post('/mobile-signup', async (req, res) => {
   try {
-    const { fullName, email, mobile } = req.body;
+    const {
+      fullName,
+      email,
+      mobile,
+      doorNumber,
+      streetArea,
+      landmark,
+      state,
+      city,
+      pincode
+    } = req.body;
 
-    if (!fullName || !email || !mobile) {
-      return res.status(400).json({
-        success: false,
-        message: 'Full name, email and mobile are required'
-      });
-    }
+    // 🔴 Mandatory fields validation
+    // if (!email || !streetArea || !state || !city || !pincode) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: 'Email, streetArea, state, city and pincode are required'
+    //   });
+    // }
 
-    // 🔍 Check again (important for safety)
-    const existingUser = await User.findOne({ email });
+    let user = await User.findOne({ email });
 
-    if (existingUser) {
+    // 🔁 UPDATE EXISTING USER
+    if (user) {
+      user.fullName = fullName ?? user.fullName;
+      user.mobile = mobile ?? user.mobile;
+      user.doorNumber = doorNumber ?? user.doorNumber;
+      user.streetArea = streetArea;
+      user.landmark = landmark ?? user.landmark;
+      user.state = state;
+      user.city = city;
+      user.pincode = pincode;
+
+      await user.save();
+
       return res.status(200).json({
         success: true,
         isNewUser: false,
-        message: 'User already exists',
-        data: existingUser
+        message: 'User profile updated successfully',
+        data: user
       });
     }
 
-    // ✅ Create new user
-    const user = await User.create({
+    // 🆕 CREATE NEW USER
+    user = await User.create({
       fullName,
       email,
-      mobile
+      mobile,
+      doorNumber,
+      streetArea,
+      landmark,
+      state,
+      city,
+      pincode
     });
 
     return res.status(201).json({
@@ -92,6 +129,65 @@ router.post('/mobile-signup', async (req, res) => {
     });
   }
 });
+
+// UPDATE DELIVERY ADDRESS INFO
+router.put('/update-profile', async (req, res) => {
+  try {
+    const {
+      email,
+      fullName,
+      mobile,
+      doorNumber,
+      streetArea,
+      landmark,
+      state,
+      city,
+      pincode
+    } = req.body;
+
+    // 🔴 Mandatory validation
+    if (!email || !streetArea || !state || !city || !pincode) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email, streetArea, state, city and pincode are required'
+      });
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // ✅ Update fields
+    user.fullName = fullName ?? user.fullName;
+    user.mobile = mobile ?? user.mobile;
+    user.doorNumber = doorNumber ?? user.doorNumber;
+    user.streetArea = streetArea;
+    user.landmark = landmark ?? user.landmark;
+    user.state = state;
+    user.city = city;
+    user.pincode = pincode;
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Profile updated successfully',
+      data: user
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
 
 
 module.exports = router;

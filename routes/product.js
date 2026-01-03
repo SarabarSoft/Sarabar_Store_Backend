@@ -26,14 +26,28 @@ router.post('/add', async (req, res) => {
       show_warning
     } = req.body;
 
+    if (!categoryId || !mongoose.Types.ObjectId.isValid(categoryId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Valid categoryId is required'
+      });
+    }
+
+    if (sub_categoryId && !mongoose.Types.ObjectId.isValid(sub_categoryId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid sub_categoryId'
+      });
+    }
+
     const product = await Product.create({
       productname,
       size,
       product_details,
-      //categoryId,
-      //sub_categoryId,
-      categoryId: categoryId ? new mongoose.Types.ObjectId(categoryId) : null,
-      sub_categoryId: sub_categoryId ? new mongoose.Types.ObjectId(sub_categoryId) : null,
+      categoryId: new mongoose.Types.ObjectId(categoryId),
+      sub_categoryId: sub_categoryId
+        ? new mongoose.Types.ObjectId(sub_categoryId)
+        : null,
       mrp,
       store_price,
       offer,
@@ -54,6 +68,7 @@ router.post('/add', async (req, res) => {
     });
   }
 });
+
 
 /* ======================================================
    UPDATE PRODUCT (NO IMAGES)

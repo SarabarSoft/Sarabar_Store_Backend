@@ -17,7 +17,13 @@ const mobileUserSchema = new mongoose.Schema({
     type: String,
     required: true,
     trim: true
-  }
+  },
+  doorNumber: String,
+  streetArea: String,
+  landmark: String,
+  state: String,
+  city: String,
+  pincode: String
 }, { timestamps: true });
 
 module.exports = mongoose.model('MobileUser', mobileUserSchema);

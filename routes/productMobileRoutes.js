@@ -149,14 +149,35 @@ router.get('/by-category/:categoryId', async (req, res) => {
     const products = await Product.find({
       categoryId: new mongoose.Types.ObjectId(categoryId)
     })
-      .populate('categoryId', 'categoryName')        // category name
-  .populate('sub_categoryId', 'subcategoryName') // subcategory name
+      .populate('categoryId', 'categoryName')
+      .populate('sub_categoryId', 'subcategoryName')
       .sort({ createdAt: -1 });
+
+    // 🔥 FORMAT RESPONSE
+    const formattedProducts = products.map(p => ({
+      _id: p._id,
+      productname: p.productname,
+      size: p.size,
+      product_details: p.product_details,
+
+      categoryId: p.categoryId?._id || null,
+      categoryName: p.categoryId?.categoryName || null,
+
+      sub_categoryId: p.sub_categoryId?._id || null,
+      subcategoryName: p.sub_categoryId?.subcategoryName || null,
+
+      mrp: p.mrp,
+      store_price: p.store_price,
+      offer: p.offer,
+      video_url: p.video_url,
+      show_warning: p.show_warning,
+      __v: p.__v
+    }));
 
     res.json({
       success: true,
-      count: products.length,
-      data: products
+      count: formattedProducts.length,
+      data: formattedProducts
     });
 
   } catch (error) {
@@ -167,6 +188,7 @@ router.get('/by-category/:categoryId', async (req, res) => {
   }
 });
 
+
 /* ======================================================
  GET products by categoryId and sub_categoryId
 ====================================================== */
@@ -174,8 +196,10 @@ router.get("/by-category-subcategory/:categoryId/:subCategoryId", async (req, re
   try {
     const { categoryId, subCategoryId } = req.params;
 
-    // Validate ObjectIds
-    if (!mongoose.Types.ObjectId.isValid(categoryId) || !mongoose.Types.ObjectId.isValid(subCategoryId)) {
+    if (
+      !mongoose.Types.ObjectId.isValid(categoryId) ||
+      !mongoose.Types.ObjectId.isValid(subCategoryId)
+    ) {
       return res.status(400).json({
         success: false,
         message: "Invalid categoryId or subCategoryId"
@@ -186,14 +210,35 @@ router.get("/by-category-subcategory/:categoryId/:subCategoryId", async (req, re
       categoryId: new mongoose.Types.ObjectId(categoryId),
       sub_categoryId: new mongoose.Types.ObjectId(subCategoryId)
     })
-      .populate("categoryId", "categoryName")          // populate category name
-      .populate("sub_categoryId", "subcategoryName")   // populate subcategory name
+      .populate("categoryId", "categoryName")
+      .populate("sub_categoryId", "subcategoryName")
       .sort({ createdAt: -1 });
+
+    // 🔥 FORMAT RESPONSE
+    const formattedProducts = products.map(p => ({
+      _id: p._id,
+      productname: p.productname,
+      size: p.size,
+      product_details: p.product_details,
+
+      categoryId: p.categoryId?._id || null,
+      categoryName: p.categoryId?.categoryName || null,
+
+      sub_categoryId: p.sub_categoryId?._id || null,
+      subcategoryName: p.sub_categoryId?.subcategoryName || null,
+
+      mrp: p.mrp,
+      store_price: p.store_price,
+      offer: p.offer,
+      video_url: p.video_url,
+      show_warning: p.show_warning,
+      __v: p.__v
+    }));
 
     res.json({
       success: true,
-      count: products.length,
-      data: products
+      count: formattedProducts.length,
+      data: formattedProducts
     });
 
   } catch (error) {
@@ -203,6 +248,7 @@ router.get("/by-category-subcategory/:categoryId/:subCategoryId", async (req, re
     });
   }
 });
+
 
 /* ======================================================
  GET Sub Category by Respective Category
