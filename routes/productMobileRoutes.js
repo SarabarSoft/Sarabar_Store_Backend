@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Product = require('../models/Product');
 const mongoose = require('mongoose');
+const Subcategory = require("../models/Subcategory");
 
 /* ======================================================
    GET ALL PRODUCTS
@@ -200,6 +201,21 @@ router.get("/by-category-subcategory/:categoryId/:subCategoryId", async (req, re
       success: false,
       message: error.message
     });
+  }
+});
+
+/* ======================================================
+ GET Sub Category by Respective Category
+====================================================== */
+router.get("/byCategory/:categoryId", async (req, res) => {
+  try {
+    const { categoryId } = req.params;
+
+    const subcategories = await Subcategory.find({ categoryId });
+
+    res.status(200).json(subcategories);
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
   }
 });
 

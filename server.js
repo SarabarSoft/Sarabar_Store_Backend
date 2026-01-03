@@ -21,6 +21,7 @@ app.use('/api/auth', authRoutes);
 
 app.use('/api/mobile',require('./routes/categoryMobileRoute'));
 app.use('/api/mobile/products', require('./routes/productMobileRoutes'));
+app.use('/api/mobile/auth', require('./routes/mobileAuthRoutes'));
 
 // 🔒 PROTECTED ROUTES
 app.use('/api/category', authMiddleware,require('./routes/Category'));
