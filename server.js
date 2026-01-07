@@ -33,8 +33,28 @@ app.use('/api/settings', authMiddleware, require('./routes/SettingRoutes'));
 app.use("/api/banner", authMiddleware,require("./routes/BannerImageRoutes"));
 app.use("/api/admin", authMiddleware,require("./routes/adminChangePasswordRoutes"));
 app.use("/api/admin", authMiddleware,require("./routes/adminOrderRoutes"));
+app.use("/api/admin/store", authMiddleware,require("./routes/StoreRoutes"));
 
 
+app.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({
+        success: false,
+        message: 'Image size must be less than 5MB'
+      });
+    }
+  }
+
+  if (err) {
+    return res.status(400).json({
+      success: false,
+      message: err.message
+    });
+  }
+
+  next();
+});
 
 
 const PORT = process.env.PORT || 5050;

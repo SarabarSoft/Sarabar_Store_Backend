@@ -106,6 +106,7 @@ router.get('/group-by-category', async (req, res) => {
 ====================================================== */
 router.get('/:id', async (req, res) => {
   try {
+    // 1️⃣ Main product
     const product = await Product.findById(req.params.id)
       .populate('categoryId', 'categoryName imageUrl')
       .populate('sub_categoryId', 'subcategoryName');
@@ -117,10 +118,23 @@ router.get('/:id', async (req, res) => {
       });
     }
 
+    // 2️⃣ Related products (FULL DATA)
+    const relatedProducts = await Product.find({
+      categoryId: product.categoryId._id,
+      _id: { $ne: product._id }
+    })
+      .populate('categoryId', 'categoryName imageUrl')
+      .populate('sub_categoryId', 'subcategoryName');
+
+    // 3️⃣ Response
     res.json({
       success: true,
-      data: product
+      data: {
+        product,
+        relatedProducts
+      }
     });
+
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -128,6 +142,9 @@ router.get('/:id', async (req, res) => {
     });
   }
 });
+
+
+
 
 
 /* ======================================================

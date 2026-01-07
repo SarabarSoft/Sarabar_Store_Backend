@@ -8,13 +8,13 @@ const productSchema = new mongoose.Schema({
    categoryId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Category',   // 🔹 important
-      //required: true
+      required: true
     },
   //sub_categoryId: String,
    sub_categoryId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Subcategory', // 🔹 important
-      //required: true
+      required: true
     },
   mrp: Number,
   store_price: Number,
