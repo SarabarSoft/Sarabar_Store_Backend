@@ -171,6 +171,10 @@ router.get('/by-category/:categoryId', async (req, res) => {
       offer: p.offer,
       video_url: p.video_url,
       show_warning: p.show_warning,
+      image_url1: p.image_url1,
+      image_url2: p.image_url2,
+      image_url3: p.image_url3,
+      image_url4: p.image_url4,
       __v: p.__v
     }));
 
