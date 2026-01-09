@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/mobileUser');
+const Logo = require('../models/Logo'); // ✅ ADD THIS
 
 // CHECK EMAIL
 router.post('/check-email', async (req, res) => {
@@ -18,11 +19,16 @@ router.post('/check-email', async (req, res) => {
     const user = await User.findOne({ email }).lean();
 
     // ✅ USER EXISTS
+
+    const logoDoc = await Logo.findOne({}).lean();
+
     if (user) {
+
       return res.status(200).json({
         success: true,
         isNewUser: false,
         message: 'User already exists',
+        logoUrl: logoDoc?.logoUrl || null,
         data: {
           id: user._id,
           fullName: user.fullName,
@@ -44,6 +50,7 @@ router.post('/check-email', async (req, res) => {
     return res.status(200).json({
       success: true,
       isNewUser: true,
+      logoUrl: logoDoc?.logoUrl || null,
       message: 'New user'
     });
 
@@ -81,6 +88,9 @@ router.post('/mobile-signup', async (req, res) => {
 
     let user = await User.findOne({ email });
 
+
+    const logoDoc = await Logo.findOne({}).lean();
+
     // 🔁 UPDATE EXISTING USER
     if (user) {
       user.fullName = fullName ?? user.fullName;
@@ -98,6 +108,7 @@ router.post('/mobile-signup', async (req, res) => {
         success: true,
         isNewUser: false,
         message: 'User profile updated successfully',
+        logoUrl: logoDoc?.logoUrl || null,
         data: user
       });
     }
@@ -119,6 +130,7 @@ router.post('/mobile-signup', async (req, res) => {
       success: true,
       isNewUser: true,
       message: 'User registered successfully',
+      logoUrl: logoDoc?.logoUrl || null,
       data: user
     });
 

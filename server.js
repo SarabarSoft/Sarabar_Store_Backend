@@ -3,7 +3,7 @@ const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const adminAuthRoutes = require('./routes/AdminSignupRoutes');
 require('dotenv').config();
-
+const multer = require('multer');
 const app = express();
 const cors = require('cors');
 const authMiddleware = require('./middleware/authtoken');
@@ -23,6 +23,8 @@ app.use('/api/mobile',require('./routes/categoryMobileRoute'));
 app.use('/api/mobile/products', require('./routes/productMobileRoutes'));
 app.use('/api/mobile/auth', require('./routes/mobileAuthRoutes'));
 app.use('/api/mobile/orders', require('./routes/mobileOrderRoutes'));
+app.use('/api/mobile', require('./routes/SearchRoutes'));
+
 
 // 🔒 PROTECTED ROUTES
 app.use('/api/category', authMiddleware,require('./routes/Category'));
@@ -34,7 +36,7 @@ app.use("/api/banner", authMiddleware,require("./routes/BannerImageRoutes"));
 app.use("/api/admin", authMiddleware,require("./routes/adminChangePasswordRoutes"));
 app.use("/api/admin", authMiddleware,require("./routes/adminOrderRoutes"));
 app.use("/api/admin/store", authMiddleware,require("./routes/StoreRoutes"));
-
+app.use('/api/admin', authMiddleware, require('./routes/LogoUploadRoutes'));
 
 app.use((err, req, res, next) => {
   if (err instanceof multer.MulterError) {
