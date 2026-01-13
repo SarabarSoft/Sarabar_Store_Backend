@@ -1,167 +1,155 @@
+const multer = require("multer");
+const storage = multer.diskStorage({});
+const upload = multer({ storage });
+
 const express = require('express');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+const router = express.Router();
+const cloudinary = require("../config/cloudinary");
 const Admin = require('../models/AdminSignup');
 
-const router = express.Router();
-
-/**
- * REGISTER
- * POST /api/auth/register
- */
-router.post('/admin_register', async (req, res) => {
-  try {
-    const { name, email, mobile } = req.body;
-
-    // Validate
-    if (!name || !email || !mobile) {
-      return res.status(400).json({
-        success: false,
-        message: 'Name, email and mobile are required'
-      });
-    }
-
-    // Check if admin already exists
-    const existingUser = await Admin.findOne({ email });
-    if (existingUser) {
-      return res.status(409).json({
-        success: false,
-        message: 'Email already registered'
-      });
-    }
-
-    // Save admin
-    const user = new Admin({
-      name,
-      email,
-      mobile
-    });
-
-    await user.save();
-
-    res.status(201).json({
-      success: true,
-      message: 'Admin registered successfully',
-      data: user
-    });
-
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error'
-    });
-  }
-});
-
-
-/**
- * LOGIN
- * POST /api/auth/login
- */
-router.post('/admin_login', async (req, res) => {
+router.post("/check-admin-email", async (req, res) => {
   try {
     const { email } = req.body;
 
-    // Validate input
     if (!email) {
       return res.status(400).json({
         success: false,
-        message: 'Email is required'
+        message: "Email is required"
       });
     }
 
-    // Check admin existence
-    const user = await Admin.findOne({ email });
-    if (!user) {
-      return res.status(401).json({
+    // Find admin with this email
+    const admin = await Admin.findOne({ email }).lean();
+
+    // If same email exists → allow login
+    if (admin) {
+      return res.status(200).json({
+        success: true,
+        isNewUser: false,
+        message: "Store found",
+        data: {
+          id: admin._id,
+          storeName: admin.storeName,
+          email: admin.email,
+          mobile: admin.mobile,
+          currency: admin.currency,
+          timeZone: admin.timeZone,
+          logoUrl: admin.logoUrl,
+          logoPublicId: admin.logoPublicId,
+          createdAt: admin.createdAt
+        }
+      });
+    }
+
+    // If another admin already exists with different email
+    const existingAdmin = await Admin.findOne({}).lean();
+
+    if (existingAdmin) {
+      return res.status(403).json({
         success: false,
-        message: 'Admin not registered'
+        isNewUser: false,
+        message:
+          "This store is already registered with another email. Please contact your development team to use the email that was registered earlier."
       });
     }
 
-    // Generate JWT token
-    const token = jwt.sign(
-      {
-        userId: user._id,
-        email: user.email
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
-
-    res.status(200).json({
+    // No admin at all → allow new store registration
+    return res.status(200).json({
       success: true,
-      message: 'Login successful',
-      token,
-      data: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        mobile: user.mobile
-      }
+      isNewUser: true,
+      message: "New store – please complete registration"
     });
 
   } catch (error) {
-    console.error(error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: error.message
     });
   }
 });
 
-/**
- * Update Admin Details
- * PUT /api/admin/update
- */
-router.put('/admin_update', async (req, res) => {
+
+
+router.post("/signup-new", upload.single("logo"), async (req, res) => {
   try {
-    const { email, name, mobile } = req.body;
+    const { storeName, email, mobile, currency, timeZone, fcmToken } = req.body; // 🔔 added
 
-    // Validate
-    if (!email) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email is required'
+    let admin = await Admin.findOne({ email });
+
+    let logoUrl = null;
+    let logoPublicId = null;
+
+    // If logo uploaded
+    if (req.file) {
+      // If store already exists, delete old logo first
+      if (admin && admin.logoPublicId) {
+        await cloudinary.uploader.destroy(admin.logoPublicId);
+      }
+
+      // Upload new logo
+      const result = await cloudinary.uploader.upload(req.file.path, {
+        folder: "stores"
       });
+
+      logoUrl = result.secure_url;
+      logoPublicId = result.public_id;
     }
 
-    // Check admin existence
-    const admin = await Admin.findOne({ email });
+    // 🆕 New Store
     if (!admin) {
-      return res.status(404).json({
-        success: false,
-        message: 'Admin not found'
+      admin = await Admin.create({
+        storeName,
+        email,
+        mobile,
+        currency,
+        timeZone,
+        fcmToken,     // 🔔 save token
+        logoUrl,
+        logoPublicId
+      });
+
+      return res.status(201).json({
+        success: true,
+        isNewUser: true,
+        message: "Store registered successfully",
+        data: admin
       });
     }
 
-    // ❌ Prevent email update explicitly
-    const updateData = {};
-    if (name) updateData.name = name;
-    if (mobile) updateData.mobile = mobile;
+    // 🔁 Existing Store → Update
+    admin.storeName = storeName ?? admin.storeName;
+    admin.mobile = mobile ?? admin.mobile;
+    admin.currency = currency ?? admin.currency;
+    admin.timeZone = timeZone ?? admin.timeZone;
 
-    // Update admin
-    const updatedAdmin = await Admin.findOneAndUpdate(
-      { email },          // email used only for lookup
-      { $set: updateData },
-      { new: true }
-    );
+    // 🔔 Update FCM token
+    if (fcmToken) {
+      admin.fcmToken = fcmToken;
+    }
 
-    res.status(200).json({
+    if (logoUrl) {
+      admin.logoUrl = logoUrl;
+      admin.logoPublicId = logoPublicId;
+    }
+
+    await admin.save();
+
+    return res.status(200).json({
       success: true,
-      message: 'Admin updated successfully',
-      data: updatedAdmin
+      isNewUser: false,
+      message: "Store updated successfully",
+      data: admin
     });
 
   } catch (error) {
-    console.error(error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: error.message
     });
   }
 });
+
+
 
 
 module.exports = router;

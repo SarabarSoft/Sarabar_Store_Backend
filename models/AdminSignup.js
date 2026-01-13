@@ -1,28 +1,29 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-const UserSchema = new mongoose.Schema(
+const AdminSchema = new mongoose.Schema(
   {
-    name: {
+    storeName: { type: String, required: true },
+
+    email: { type: String, required: true, unique: true, lowercase: true },
+    mobile: { type: String, required: true },
+
+    // 🔔 Admin Device Token (for order alerts, etc)
+    fcmToken: {
       type: String,
-      required: true,
-      trim: true
+      default: null,
+      index: true
     },
 
-    email: {
-      type: String,
-      required: true,
-      unique: true,
-      lowercase: true,
-      trim: true
-    },
+    currency: { type: String, default: "INR" },
+    timeZone: { type: String, default: "Asia/Kolkata" },
 
-    mobile: {
-      type: String,
-      required: true,
-      trim: true
-    }
+    // 🆕 Store Logo
+    logoUrl: { type: String },
+    logoPublicId: { type: String },
+
+    isActive: { type: Boolean, default: true }
   },
   { timestamps: true }
 );
 
-module.exports = mongoose.model('Admin', UserSchema);
+module.exports = mongoose.model("Admin", AdminSchema);

@@ -7,7 +7,7 @@ const Logo = require('../models/Logo'); // ✅ ADD THIS
 // CHECK EMAIL
 router.post('/check-email', async (req, res) => {
   try {
-    const { email } = req.body;
+    const { email, fcmToken } = req.body;   // 🔥 added
 
     if (!email) {
       return res.status(400).json({
@@ -16,13 +16,18 @@ router.post('/check-email', async (req, res) => {
       });
     }
 
-    const user = await User.findOne({ email }).lean();
-
-    // ✅ USER EXISTS
-
     const logoDoc = await Logo.findOne({}).lean();
 
+    let user = await User.findOne({ email });
+
+    // ✅ USER EXISTS
     if (user) {
+
+      // 🔔 Update FCM token if provided
+      if (fcmToken) {
+        user.fcmToken = fcmToken;
+        await user.save();
+      }
 
       return res.status(200).json({
         success: true,
@@ -34,6 +39,7 @@ router.post('/check-email', async (req, res) => {
           fullName: user.fullName,
           email: user.email,
           mobile: user.mobile,
+          fcmToken: user.fcmToken,   // optional return
           doorNumber: user.doorNumber,
           streetArea: user.streetArea,
           landmark: user.landmark,
@@ -63,6 +69,8 @@ router.post('/check-email', async (req, res) => {
 });
 
 
+
+// SIGNUP OR LOGIN
 // SIGNUP OR LOGIN
 router.post('/mobile-signup', async (req, res) => {
   try {
@@ -70,6 +78,7 @@ router.post('/mobile-signup', async (req, res) => {
       fullName,
       email,
       mobile,
+      fcmToken,   // 🔥 added
       doorNumber,
       streetArea,
       landmark,
@@ -79,15 +88,14 @@ router.post('/mobile-signup', async (req, res) => {
     } = req.body;
 
     // 🔴 Mandatory fields validation
-    // if (!email || !streetArea || !state || !city || !pincode) {
-    //   return res.status(400).json({
-    //     success: false,
-    //     message: 'Email, streetArea, state, city and pincode are required'
-    //   });
-    // }
+    if (!email || !streetArea || !state || !city || !pincode) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email, streetArea, state, city and pincode are required'
+      });
+    }
 
     let user = await User.findOne({ email });
-
 
     const logoDoc = await Logo.findOne({}).lean();
 
@@ -101,6 +109,11 @@ router.post('/mobile-signup', async (req, res) => {
       user.state = state;
       user.city = city;
       user.pincode = pincode;
+
+      // 🔔 Update FCM Token (if sent)
+      if (fcmToken) {
+        user.fcmToken = fcmToken;
+      }
 
       await user.save();
 
@@ -118,6 +131,7 @@ router.post('/mobile-signup', async (req, res) => {
       fullName,
       email,
       mobile,
+      fcmToken,   // 🔥 store token on signup
       doorNumber,
       streetArea,
       landmark,
