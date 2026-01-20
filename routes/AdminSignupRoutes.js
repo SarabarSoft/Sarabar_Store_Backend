@@ -48,15 +48,15 @@ router.post("/check-admin-email", async (req, res) => {
     }
 
     // 🚫 Another admin already registered
-    const existingAdmin = await Admin.findOne({});
-    if (existingAdmin) {
-      return res.status(403).json({
-        success: false,
-        isNewUser: false,
-        message:
-          "This store is already registered with another email. Please contact your development team to use the email that was registered earlier."
-      });
-    }
+    // const existingAdmin = await Admin.findOne({});
+    // if (existingAdmin) {
+    //   return res.status(403).json({
+    //     success: false,
+    //     isNewUser: false,
+    //     message:
+    //       "This store is already registered with another email. Please contact your development team to use the email that was registered earlier."
+    //   });
+    // }
 
     // 🆕 No admin → allow signup
     return res.status(200).json({
