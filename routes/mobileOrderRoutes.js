@@ -157,6 +157,118 @@ router.post('/verify-payment', async (req, res) => {
   }
 });
 
+// SAVE ORDER FOR COD
+// PLACE COD ORDER
+router.post('/place-cod-order', async (req, res) => {
+  try {
+    const {
+      userId,
+      items,
+      totalAmount,
+      address
+    } = req.body;
+
+    // 🔴 BASIC VALIDATIONS
+    if (!userId || !items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'UserId and items are required'
+      });
+    }
+
+    if (!totalAmount) {
+      return res.status(400).json({
+        success: false,
+        message: 'Total amount is required'
+      });
+    }
+
+    // 🔴 ADDRESS VALIDATION
+    if (!address?.streetArea || !address?.state || !address?.city || !address?.pincode) {
+      return res.status(400).json({
+        success: false,
+        message: 'Street Area, State, City and Pincode are required'
+      });
+    }
+
+    // 🔥 MAP qty → quantity (VERY IMPORTANT)
+    const formattedItems = items.map((item, index) => {
+      if (!item.productId || !item.price) {
+        throw new Error(`Invalid item at index ${index}`);
+      }
+
+      const quantity = item.quantity ?? item.qty;
+
+      if (!quantity || quantity < 1) {
+        throw new Error(`Quantity missing for item at index ${index}`);
+      }
+
+      return {
+        productId: item.productId,
+        productName: item.productName,
+        quantity,
+        price: item.price
+      };
+    });
+
+    // ✅ CREATE COD ORDER
+    const order = await Order.create({
+      userId,
+      items: formattedItems,
+      totalAmount,
+      address,
+      paymentMethod: 'COD',
+      orderStatus: 'PLACED'
+    });
+
+    // ============================
+    // 🔔 PUSH TO CUSTOMER
+    // ============================
+    const user = await User.findById(userId);
+
+    if (user?.fcmToken) {
+      await sendPush(
+        user.fcmToken,
+        "🛒 Order Placed Successfully!",
+        `Your COD order #${order._id} has been placed.`,
+        {
+          orderId: order._id.toString(),
+          type: "ORDER_PLACED"
+        }
+      );
+    }
+
+    // ============================
+    // 🔔 PUSH TO ADMIN
+    // ============================
+    const admins = await Admin.find({ fcmToken: { $ne: null } });
+
+    for (const admin of admins) {
+      await sendPush(
+        admin.fcmToken,
+        "🛒 New COD Order!",
+        `Order #${order._id} worth ₹${totalAmount} has been placed.`,
+        {
+          orderId: order._id.toString(),
+          type: "NEW_ORDER"
+        }
+      );
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: 'COD order placed successfully',
+      data: order
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
 // 🔔 TEST PUSH NOTIFICATION (User + Admin)
 router.post("/test-push", async (req, res) => {
   try {

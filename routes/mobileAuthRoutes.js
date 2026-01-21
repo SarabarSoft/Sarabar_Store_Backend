@@ -68,8 +68,6 @@ router.post('/check-email', async (req, res) => {
   }
 });
 
-
-
 // SIGNUP OR LOGIN
 // SIGNUP OR LOGIN
 router.post('/mobile-signup', async (req, res) => {
@@ -213,6 +211,66 @@ router.put('/update-profile', async (req, res) => {
     });
   }
 });
+
+
+// GET ALL MOBILE USERS (ADMIN)
+router.get('/get-customer', async (req, res) => {
+  try {
+    const users = await User.find({})
+      .sort({ createdAt: -1 })
+      .select('-__v')   // optional
+      .lean();
+
+    return res.status(200).json({
+      success: true,
+      count: users.length,
+      data: users
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// GET MOBILE USER BY ID (ADMIN)
+// GET CUSTOMER BY ID
+router.get('/get-customer/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: 'User ID is required'
+      });
+    }
+
+    const user = await User.findById(id).select('-__v');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: user
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+
 
 
 

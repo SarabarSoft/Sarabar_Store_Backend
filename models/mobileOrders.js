@@ -57,8 +57,8 @@ const mobileOrderSchema = new mongoose.Schema({
 
   paymentMethod: {
     type: String,
-    enum: ['ONLINE'],
-    default: 'ONLINE'
+    enum: ['ONLINE', 'COD'],
+    required: true
   },
 
   paymentInfo: {
@@ -70,7 +70,7 @@ const mobileOrderSchema = new mongoose.Schema({
     type: String,
     enum: ['PLACED', 'CONFIRMED', 'SHIPPED', 'DELIVERED', 'CANCELLED'],
     default: 'PLACED'
-  }
+  },
 
 }, { timestamps: true });
 
