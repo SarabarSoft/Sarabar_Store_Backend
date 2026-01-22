@@ -4,6 +4,8 @@ const router = express.Router();
 const User = require('../models/mobileUser');
 const Logo = require('../models/Logo'); // ✅ ADD THIS
 
+const authMiddleware = require('../middleware/authtoken');
+
 // CHECK EMAIL
 router.post('/check-email', async (req, res) => {
   try {
@@ -214,7 +216,7 @@ router.put('/update-profile', async (req, res) => {
 
 
 // GET ALL MOBILE USERS (ADMIN)
-router.get('/get-customer', async (req, res) => {
+router.get('/get-customer',authMiddleware, async (req, res) => {
   try {
     const users = await User.find({})
       .sort({ createdAt: -1 })
