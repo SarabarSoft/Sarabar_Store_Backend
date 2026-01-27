@@ -7,6 +7,7 @@ const router = express.Router();
 const cloudinary = require("../config/cloudinary");
 const Admin = require('../models/AdminSignup');
 const jwt = require("jsonwebtoken");
+const authMiddleware = require('../middleware/authtoken');
 
 router.post("/check-admin-email", async (req, res) => {
   try {
@@ -75,24 +76,23 @@ router.post("/check-admin-email", async (req, res) => {
 
 
 
-
 router.post("/signup-new", upload.single("logo"), async (req, res) => {
   try {
-    const { storeName, email, mobile, currency, timeZone, fcmToken } = req.body; // 🔔 added
+    const { storeName, email, mobile, currency, timeZone, fcmToken } = req.body;
 
     let admin = await Admin.findOne({ email });
 
+    // 🔹 Only handle logo if uploaded
     let logoUrl = null;
     let logoPublicId = null;
 
-    // If logo uploaded
     if (req.file) {
-      // If store already exists, delete old logo first
-      if (admin && admin.logoPublicId) {
+      // If admin already has a logo, delete it from Cloudinary
+      if (admin?.logoPublicId) {
         await cloudinary.uploader.destroy(admin.logoPublicId);
       }
 
-      // Upload new logo
+      // Upload the new logo
       const result = await cloudinary.uploader.upload(req.file.path, {
         folder: "stores"
       });
@@ -101,15 +101,15 @@ router.post("/signup-new", upload.single("logo"), async (req, res) => {
       logoPublicId = result.public_id;
     }
 
-    // 🆕 New Store
     if (!admin) {
+      // 🆕 Create new store
       admin = await Admin.create({
         storeName,
         email,
         mobile,
         currency,
         timeZone,
-        fcmToken,     // 🔔 save token
+        fcmToken,
         logoUrl,
         logoPublicId
       });
@@ -122,16 +122,13 @@ router.post("/signup-new", upload.single("logo"), async (req, res) => {
       });
     }
 
-    // 🔁 Existing Store → Update
+    // 🔁 Update existing store
     admin.storeName = storeName ?? admin.storeName;
     admin.mobile = mobile ?? admin.mobile;
     admin.currency = currency ?? admin.currency;
     admin.timeZone = timeZone ?? admin.timeZone;
 
-    // 🔔 Update FCM token
-    if (fcmToken) {
-      admin.fcmToken = fcmToken;
-    }
+    if (fcmToken) admin.fcmToken = fcmToken;
 
     if (logoUrl) {
       admin.logoUrl = logoUrl;
@@ -157,7 +154,8 @@ router.post("/signup-new", upload.single("logo"), async (req, res) => {
 
 
 
-router.put("/update-store/:adminId", upload.single("logo"), async (req, res) => {
+
+router.put("/update-store/:adminId", authMiddleware,upload.single("logo"), async (req, res) => {
   try {
     const { adminId } = req.params;
     const { storeName, mobile, currency, timeZone } = req.body;

@@ -8,6 +8,8 @@ const User = require('../models/mobileUser');
 const sendPush = require("../utils/sendPush");
 const Admin = require("../models/AdminSignup");
 
+const authMiddleware = require('../middleware/authtoken');
+
 // 🔑 Initialize Razorpay
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
@@ -317,4 +319,136 @@ router.post("/test-push", async (req, res) => {
 });
 
 
+// GET  ALL ORDERS LIST
+// 🔹 GET ALL ORDERS (LATEST FIRST)
+router.get('/list', authMiddleware,async (req, res) => {
+  try {
+    const orders = await Order
+      .find({})
+      .populate('userId', 'fullName email mobile') // optional
+      .sort({ createdAt: -1 }); // 🔥 latest first
+
+    return res.status(200).json({
+      success: true,
+      count: orders.length,
+      data: orders
+    });
+
+  } catch (error) {
+    console.error('Get orders error:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+
+// 🔹 UPDATE ORDER STATUS WITH PUSH NOTIFICATION
+// 🔹 UPDATE ORDER STATUS WITH PUSH NOTIFICATION
+// 🔹 UPDATE ORDER STATUS WITH PUSH NOTIFICATION
+router.put('/update-status', async (req, res) => {
+  try {
+    const { orderId, orderStatus } = req.body;
+
+    if (!orderId || !orderStatus) {
+      return res.status(400).json({
+        success: false,
+        message: 'orderId and orderStatus are required'
+      });
+    }
+
+    const allowedStatuses = [
+      'PLACED',
+      'SHIPPED',
+      'DELIVERED',
+      'CANCELLED',
+      'RETURNED'
+    ];
+
+    if (!allowedStatuses.includes(orderStatus)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid order status'
+      });
+    }
+
+    // 🔹 FETCH ORDER
+    const order = await Order.findById(orderId);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+
+    // 🔹 UPDATE STATUS
+    order.orderStatus = orderStatus;
+    await order.save();
+
+    // Temporary fields to confirm push status
+    let userPushSent = false;
+    let adminPushSentCount = 0;
+
+    // ============================
+    // 🔔 PUSH TO CUSTOMER
+    // ============================
+    const user = await User.findById(order.userId);
+    if (user?.fcmToken) {
+      try {
+        await sendPush(
+          user.fcmToken,
+          "🛒 Order Status Updated",
+          `Your order #${order._id} status is now "${orderStatus}".`,
+          {
+            orderId: order._id.toString(),
+            type: "ORDER_STATUS_UPDATED"
+          }
+        );
+        userPushSent = true;
+      } catch (err) {
+        console.error('Error sending push to user:', err);
+      }
+    }
+
+    // ============================
+    // 🔔 PUSH TO ADMINS
+    // ============================
+    const admins = await Admin.find({ fcmToken: { $ne: null } });
+    for (const admin of admins) {
+      try {
+        await sendPush(
+          admin.fcmToken,
+          "🛒 Order Status Updated",
+          `Order #${order._id} has been updated to "${orderStatus}".`,
+          {
+            orderId: order._id.toString(),
+            type: "ORDER_STATUS_UPDATED"
+          }
+        );
+        adminPushSentCount++;
+      } catch (err) {
+        console.error(`Error sending push to admin ${admin._id}:`, err);
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Order status updated successfully',
+      data: order,
+      pushNotification: {
+        userPushSent,
+        adminPushSentCount
+      }
+    });
+
+  } catch (error) {
+    console.error('Update order status error:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
 module.exports = router;
