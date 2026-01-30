@@ -345,8 +345,6 @@ router.get('/list', authMiddleware,async (req, res) => {
 
 
 // 🔹 UPDATE ORDER STATUS WITH PUSH NOTIFICATION
-// 🔹 UPDATE ORDER STATUS WITH PUSH NOTIFICATION
-// 🔹 UPDATE ORDER STATUS WITH PUSH NOTIFICATION
 router.put('/update-status', async (req, res) => {
   try {
     const { orderId, orderStatus } = req.body;
@@ -451,4 +449,52 @@ router.put('/update-status', async (req, res) => {
     });
   }
 });
+
+// GET ORDER DETAILS BY ID
+// Get order details by orderId
+router.get('/:orderId', authMiddleware, async (req, res) => {
+  try {
+    const order = await Order
+      .findById(req.params.orderId)
+      .populate('userId', 'fullName email mobile')
+      .populate({
+        path: 'items.productId',
+        select: '-__v -createdAt -updatedAt'
+      });
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+
+    const formattedOrder = {
+      ...order.toObject(),
+      items: order.items.map(item => ({
+        _id: item._id,
+        productInfo: item.productId,   // ✅ renamed key
+        productName: item.productName,
+        quantity: item.quantity,
+        price: item.price
+      }))
+    };
+
+    return res.status(200).json({
+      success: true,
+      data: formattedOrder
+    });
+
+  } catch (error) {
+    console.error('Get order error:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+
+
+
 module.exports = router;
