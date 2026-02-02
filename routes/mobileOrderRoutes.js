@@ -339,7 +339,7 @@ router.post('/verify-payment', async (req, res) => {
 });
 
 
-// SAVE ORDER FOR COD
+
 // PLACE COD ORDER
 router.post('/place-cod-order', async (req, res) => {
   try {
@@ -674,7 +674,107 @@ router.get('/:orderId', authMiddleware, async (req, res) => {
   }
 });
 
+// 🔹 UPDATE CANCEL / RETURN DETAILS
+router.put('/update-cancel-return', async (req, res) => {
+  try {
+    const {
+      orderId,
+      status,          // CANCELLED or RETURNED
+      reason,
+      actionBy         // CUSTOMER / ADMIN / SYSTEM
+    } = req.body;
 
+    if (!orderId || !status) {
+      return res.status(400).json({
+        success: false,
+        message: 'orderId and status are required'
+      });
+    }
+
+    if (!['CANCELLED', 'RETURNED'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Status must be CANCELLED or RETURNED'
+      });
+    }
+
+    const order = await Order.findByIdAndUpdate(
+      orderId,
+      {
+        order_status: status,
+        cancel_return_reason: reason || '',
+        canceled_returned_by: actionBy || 'ADMIN'
+      },
+      { new: true }
+    );
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Order ${status.toLowerCase()} successfully`,
+      data: order
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// 🔹 UPDATE TRACKING DETAILS
+router.put('/update-tracking',authMiddleware, async (req, res) => {
+  try {
+    const {
+      orderId,
+      trackingId,
+      trackingUrl
+    } = req.body;
+
+    if (!orderId || !trackingId) {
+      return res.status(400).json({
+        success: false,
+        message: 'orderId and trackingId are required'
+      });
+    }
+
+    const order = await Order.findByIdAndUpdate(
+      orderId,
+      {
+        tracking_id: trackingId,
+        tracking_url: trackingUrl || '',
+        order_status: 'SHIPPED'
+      },
+      { new: true }
+    );
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Tracking details updated successfully',
+      data: order
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
 
 
 module.exports = router;

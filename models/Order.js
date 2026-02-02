@@ -23,6 +23,24 @@ const orderSchema = new mongoose.Schema(
       type: String,
       enum: ['PLACED', 'CONFIRMED', 'SHIPPED', 'DELIVERED', 'CANCELLED'],
       default: 'PLACED'
+    },
+    // 🔴 Cancel / Return details
+    cancel_return_reason: {
+      type: String
+    },
+
+    canceled_returned_by: {
+      type: String,
+      enum: ['CUSTOMER', 'ADMIN', 'SYSTEM']
+    },
+
+    // 🚚 Tracking details
+    tracking_id: {
+      type: String
+    },
+
+    tracking_url: {
+      type: String
     }
   },
   { timestamps: true }

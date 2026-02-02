@@ -6,10 +6,7 @@ const Setting = require('../models/Setting');
    CREATE / UPDATE SETTINGS (UPSERT)
    POST /api/settings
 ====================================================== */
-/* ======================================================
-   ADD / UPDATE SETTINGS (SMART LOGIC)
-   POST /api/settings
-====================================================== */
+
 
 router.post('/', async (req, res) => {
   try {

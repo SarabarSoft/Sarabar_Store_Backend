@@ -7,8 +7,10 @@ const router = express.Router();
 const cloudinary = require("../config/cloudinary");
 const Banner = require("../models/BannerImage");
 
+const authMiddleware = require('../middleware/authtoken');
+
 // DELETE
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", authMiddleware, async (req, res) => {
   try {
     const banner = await Banner.findById(req.params.id);
 
@@ -33,7 +35,7 @@ router.delete("/:id", async (req, res) => {
 });
 
 // ADD
-router.post("/", upload.single("image"), async (req, res) => {
+router.post("/", upload.single("image"), authMiddleware,async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: "Image file is required" });
