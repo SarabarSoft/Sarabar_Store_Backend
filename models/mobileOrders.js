@@ -71,6 +71,13 @@ const mobileOrderSchema = new mongoose.Schema({
     enum: ['PLACED', 'CONFIRMED', 'SHIPPED', 'DELIVERED', 'CANCELLED'],
     default: 'PLACED'
   },
+    trackingId: {
+      type: String
+    },
+
+    trackingUrl: {
+      type: String
+    },
 
 }, { timestamps: true });
 

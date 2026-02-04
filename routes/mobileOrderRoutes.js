@@ -400,7 +400,9 @@ router.post('/place-cod-order', async (req, res) => {
       totalAmount,
       address,
       paymentMethod: 'COD',
-      orderStatus: 'PLACED'
+      orderStatus: 'PLACED',
+      trackingId: '',
+      trackingUrl: ''
     });
 
     // ============================
@@ -650,10 +652,24 @@ router.get('/:orderId', authMiddleware, async (req, res) => {
     }
 
     const formattedOrder = {
-      ...order.toObject(),
+      _id: order._id,
+      user: order.userId,
+      totalAmount: order.totalAmount,
+      address: order.address,
+      paymentMethod: order.paymentMethod,
+      paymentInfo: order.paymentInfo,
+      orderStatus: order.orderStatus,
+
+      // 🚚 Tracking details
+      trackingId: order.trackingId || null,
+      trackingUrl: order.trackingUrl || null,
+
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt,
+
       items: order.items.map(item => ({
         _id: item._id,
-        productInfo: item.productId,   // ✅ renamed key
+        productInfo: item.productId,
         productName: item.productName,
         quantity: item.quantity,
         price: item.price
@@ -673,6 +689,7 @@ router.get('/:orderId', authMiddleware, async (req, res) => {
     });
   }
 });
+
 
 // 🔹 UPDATE CANCEL / RETURN DETAILS
 router.put('/update-cancel-return', async (req, res) => {
@@ -730,13 +747,9 @@ router.put('/update-cancel-return', async (req, res) => {
 });
 
 // 🔹 UPDATE TRACKING DETAILS
-router.put('/update-tracking',authMiddleware, async (req, res) => {
+router.put('/update-tracking', authMiddleware, async (req, res) => {
   try {
-    const {
-      orderId,
-      trackingId,
-      trackingUrl
-    } = req.body;
+    const { orderId, trackingId, trackingUrl } = req.body;
 
     if (!orderId || !trackingId) {
       return res.status(400).json({
@@ -748,9 +761,9 @@ router.put('/update-tracking',authMiddleware, async (req, res) => {
     const order = await Order.findByIdAndUpdate(
       orderId,
       {
-        tracking_id: trackingId,
-        tracking_url: trackingUrl || '',
-        order_status: 'SHIPPED'
+        trackingId: trackingId,
+        trackingUrl: trackingUrl || '',
+        orderStatus: 'SHIPPED'
       },
       { new: true }
     );
@@ -769,12 +782,62 @@ router.put('/update-tracking',authMiddleware, async (req, res) => {
     });
 
   } catch (error) {
+    console.error('Update tracking error:', error);
     return res.status(500).json({
       success: false,
       message: error.message
     });
   }
 });
+
+// GET ORDERS BY USER ID
+router.get('/user/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const orders = await Order
+      .find({ userId })
+      .populate('userId', 'fullName email mobile')
+      .populate({
+        path: 'items.productId',
+        select: '-__v -createdAt -updatedAt'
+      })
+      .sort({ createdAt: -1 });
+
+    const formattedOrders = orders.map(order => ({
+      _id: order._id,
+      orderStatus: order.orderStatus,
+      totalAmount: order.totalAmount,
+      paymentMethod: order.paymentMethod,
+      trackingId: order.trackingId || null,
+      trackingUrl: order.trackingUrl || null,
+      createdAt: order.createdAt,
+
+      items: order.items.map(item => ({
+        _id: item._id,
+        quantity: item.quantity,
+        price: item.price,
+
+        // ✅ FULL PRODUCT INFO (includes images)
+        product: item.productId
+      }))
+    }));
+
+    return res.status(200).json({
+      success: true,
+      count: formattedOrders.length,
+      data: formattedOrders
+    });
+
+  } catch (error) {
+    console.error('Get user orders error:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
 
 
 module.exports = router;
