@@ -62,22 +62,24 @@ const mobileOrderSchema = new mongoose.Schema({
   },
 
   paymentInfo: {
-  razorpay_order_id: String,
-  razorpay_payment_id: String
-},
+    razorpay_order_id: String,
+    razorpay_payment_id: String
+  },
 
   orderStatus: {
     type: String,
     enum: ['PLACED', 'CONFIRMED', 'SHIPPED', 'DELIVERED', 'CANCELLED'],
     default: 'PLACED'
   },
-    trackingId: {
-      type: String
-    },
+  trackingId: {
+    type: String,
+    default: null
+  },
+  trackingUrl: {
+    type: String,
+    default: null
+  }
 
-    trackingUrl: {
-      type: String
-    },
 
 }, { timestamps: true });
 
