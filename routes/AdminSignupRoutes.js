@@ -8,6 +8,7 @@ const cloudinary = require("../config/cloudinary");
 const Admin = require('../models/AdminSignup');
 const jwt = require("jsonwebtoken");
 const authMiddleware = require('../middleware/authtoken');
+const Store = require('../models/Store');
 
 router.post("/check-admin-email", async (req, res) => {
   try {
@@ -114,26 +115,59 @@ router.post("/signup-new", upload.single("logo"), async (req, res) => {
         logoPublicId
       });
 
+      // 2️⃣ Create Store linked to Admin
+      const store = await Store.create({
+        storeName,
+        email,
+        mobile,
+        currency,
+        timeZone,
+        logoUrl,
+        logoPublicId,
+        adminId: admin._id
+      });
+
+       // 3️⃣ Save store reference inside admin
+      admin.storeId = store._id;
+      await admin.save();
+
       return res.status(201).json({
         success: true,
         isNewUser: true,
-        message: "Store registered successfully",
+        message: "Store and Admin registered successfully",
         data: admin
       });
     }
 
     // 🔁 Update existing store
+
+     const store = await Store.findOne({ adminId: admin._id });
+
+    if (!store) {
+      return res.status(404).json({
+        success: false,
+        message: "Store not found"
+      });
+    }
+
     admin.storeName = storeName ?? admin.storeName;
     admin.mobile = mobile ?? admin.mobile;
     admin.currency = currency ?? admin.currency;
     admin.timeZone = timeZone ?? admin.timeZone;
 
-    if (fcmToken) admin.fcmToken = fcmToken;
-
     if (logoUrl) {
-      admin.logoUrl = logoUrl;
-      admin.logoPublicId = logoPublicId;
+      // delete old logo
+      if (store.logoPublicId) {
+        await cloudinary.uploader.destroy(store.logoPublicId);
+      }
+
+      store.logoUrl = logoUrl;
+      store.logoPublicId = logoPublicId;
     }
+
+    await store.save();
+    
+    if (fcmToken) admin.fcmToken = fcmToken;
 
     await admin.save();
 
@@ -155,59 +189,75 @@ router.post("/signup-new", upload.single("logo"), async (req, res) => {
 
 
 
-router.put("/update-store/:adminId", authMiddleware,upload.single("logo"), async (req, res) => {
-  try {
-    const { adminId } = req.params;
-    const { storeName, mobile, currency, timeZone } = req.body;
+router.put(
+  "/update-store/:adminId",
+  authMiddleware,
+  upload.single("logo"),
+  async (req, res) => {
+    try {
+      const { adminId } = req.params;
+      const { storeName, mobile, currency, timeZone } = req.body;
 
-    const admin = await Admin.findById(adminId);
-    if (!admin) {
-      return res.status(404).json({
-        success: false,
-        message: "Store not found"
-      });
-    }
-
-    let logoUrl = admin.logoUrl;
-    let logoPublicId = admin.logoPublicId;
-
-    // Replace logo if uploaded
-    if (req.file) {
-      if (admin.logoPublicId) {
-        await cloudinary.uploader.destroy(admin.logoPublicId);
+      // 1️⃣ Find admin
+      const admin = await Admin.findById(adminId);
+      if (!admin) {
+        return res.status(404).json({
+          success: false,
+          message: "Admin not found"
+        });
       }
 
-      const uploaded = await cloudinary.uploader.upload(req.file.path, {
-        folder: "stores"
+      // 2️⃣ Find linked store
+      const store = await Store.findOne({ adminId: admin._id });
+      if (!store) {
+        return res.status(404).json({
+          success: false,
+          message: "Store not found"
+        });
+      }
+
+      let logoUrl = store.logoUrl;
+      let logoPublicId = store.logoPublicId;
+
+      // 3️⃣ Replace logo if uploaded
+      if (req.file) {
+        if (store.logoPublicId) {
+          await cloudinary.uploader.destroy(store.logoPublicId);
+        }
+
+        const uploaded = await cloudinary.uploader.upload(req.file.path, {
+          folder: "stores"
+        });
+
+        logoUrl = uploaded.secure_url;
+        logoPublicId = uploaded.public_id;
+      }
+
+      // 4️⃣ Update store fields
+      store.storeName = storeName ?? store.storeName;
+      store.mobile = mobile ?? store.mobile;
+      store.currency = currency ?? store.currency;
+      store.timeZone = timeZone ?? store.timeZone;
+      store.logoUrl = logoUrl;
+      store.logoPublicId = logoPublicId;
+
+      await store.save();
+
+      return res.status(200).json({
+        success: true,
+        message: "Store updated successfully",
+        data: store
       });
 
-      logoUrl = uploaded.secure_url;
-      logoPublicId = uploaded.public_id;
+    } catch (err) {
+      return res.status(500).json({
+        success: false,
+        message: err.message
+      });
     }
-
-    // Update allowed fields only
-    admin.storeName = storeName ?? admin.storeName;
-    admin.mobile = mobile ?? admin.mobile;
-    admin.currency = currency ?? admin.currency;
-    admin.timeZone = timeZone ?? admin.timeZone;
-    admin.logoUrl = logoUrl;
-    admin.logoPublicId = logoPublicId;
-
-    await admin.save();
-
-    return res.status(200).json({
-      success: true,
-      message: "Store details updated successfully",
-      data: admin
-    });
-
-  } catch (err) {
-    return res.status(500).json({
-      success: false,
-      message: err.message
-    });
   }
-});
+);
+
 
 
 

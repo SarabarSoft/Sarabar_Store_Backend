@@ -6,7 +6,7 @@ const express = require("express");
 const router = express.Router();
 const cloudinary = require("../config/cloudinary");
 const Banner = require("../models/BannerImage");
-
+const Store = require("../models/Store");
 const authMiddleware = require('../middleware/authtoken');
 
 // DELETE
@@ -67,14 +67,20 @@ router.post("/", upload.single("image"), authMiddleware,async (req, res) => {
 router.get("/", async (req, res) => {
   try {
     const banners = await Banner.find().sort({ createdAt: -1 });
+    const stores = await Store.find(); // or add filter if needed
 
     res.json({
       success: true,
-      data: banners,
+      banners,
+      stores,
     });
+
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({
+      message: "Server error",
+      error: err.message,
+    });
   }
 });
 

@@ -565,6 +565,7 @@ router.put('/update-status', async (req, res) => {
 
     // 🔹 UPDATE STATUS
     order.orderStatus = orderStatus;
+    order.statusUpdatedAt = new Date();
     await order.save();
 
     // Temporary fields to confirm push status
@@ -632,7 +633,7 @@ router.put('/update-status', async (req, res) => {
   }
 });
 
-// GET ORDER DETAILS BY ID
+
 // Get order details by orderId
 router.get('/:orderId', authMiddleware, async (req, res) => {
   try {
@@ -807,18 +808,20 @@ router.get('/user/:userId', async (req, res) => {
     const formattedOrders = orders.map(order => ({
       _id: order._id,
       orderStatus: order.orderStatus,
+      statusUpdatedAt: order.statusUpdatedAt, // ✅ NEW
       totalAmount: order.totalAmount,
       paymentMethod: order.paymentMethod,
       trackingId: order.trackingId || null,
       trackingUrl: order.trackingUrl || null,
       createdAt: order.createdAt,
 
+      // ✅ DELIVERY ADDRESS
+      deliveryAddress: order.address || null,
+
       items: order.items.map(item => ({
         _id: item._id,
         quantity: item.quantity,
         price: item.price,
-
-        // ✅ FULL PRODUCT INFO (includes images)
         product: item.productId
       }))
     }));
@@ -837,6 +840,7 @@ router.get('/user/:userId', async (req, res) => {
     });
   }
 });
+
 
 
 

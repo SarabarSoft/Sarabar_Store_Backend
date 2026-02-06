@@ -2,15 +2,16 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/mobileUser');
-const Logo = require('../models/Logo'); // ✅ ADD THIS
+const Store = require('../models/Store'); // ✅ ADD THIS
 
 const authMiddleware = require('../middleware/authtoken');
 
 // CHECK EMAIL
 router.post('/check-email', async (req, res) => {
   try {
-    const { email, fcmToken } = req.body;   // 🔥 added
+    const { email, fcmToken } = req.body;
 
+    // ✅ Validate email
     if (!email) {
       return res.status(400).json({
         success: false,
@@ -18,15 +19,19 @@ router.post('/check-email', async (req, res) => {
       });
     }
 
-    const logoDoc = await Logo.findOne({}).lean();
+    // ✅ Fetch store logo (global store)
+    const store = await Store.findOne({}).lean();
 
+    // ✅ Check user
     let user = await User.findOne({ email });
 
+    // =========================
     // ✅ USER EXISTS
+    // =========================
     if (user) {
 
       // 🔔 Update FCM token if provided
-      if (fcmToken) {
+      if (fcmToken && fcmToken !== user.fcmToken) {
         user.fcmToken = fcmToken;
         await user.save();
       }
@@ -35,13 +40,13 @@ router.post('/check-email', async (req, res) => {
         success: true,
         isNewUser: false,
         message: 'User already exists',
-        logoUrl: logoDoc?.logoUrl || null,
+        logoUrl: store?.logoUrl || null,
         data: {
           id: user._id,
           fullName: user.fullName,
           email: user.email,
           mobile: user.mobile,
-          fcmToken: user.fcmToken,   // optional return
+          fcmToken: user.fcmToken,
           doorNumber: user.doorNumber,
           streetArea: user.streetArea,
           landmark: user.landmark,
@@ -54,23 +59,28 @@ router.post('/check-email', async (req, res) => {
       });
     }
 
+    // =========================
     // 🆕 NEW USER
+    // =========================
     return res.status(200).json({
       success: true,
       isNewUser: true,
-      logoUrl: logoDoc?.logoUrl || null,
-      message: 'New user'
+      message: 'New user',
+      logoUrl: store?.logoUrl || null
     });
 
   } catch (error) {
+    console.error('Check email error:', error);
+
     return res.status(500).json({
       success: false,
-      message: error.message
+      message: 'Server error',
+      error: error.message
     });
   }
 });
 
-// SIGNUP OR LOGIN
+
 // SIGNUP OR LOGIN
 router.post('/mobile-signup', async (req, res) => {
   try {

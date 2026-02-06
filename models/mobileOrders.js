@@ -78,7 +78,11 @@ const mobileOrderSchema = new mongoose.Schema({
   trackingUrl: {
     type: String,
     default: null
-  }
+  },
+  statusUpdatedAt: {
+  type: Date,
+  default: Date.now
+}
 
 
 }, { timestamps: true });
