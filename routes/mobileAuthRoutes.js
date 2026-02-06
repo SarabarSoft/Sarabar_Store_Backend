@@ -107,7 +107,7 @@ router.post('/mobile-signup', async (req, res) => {
 
     let user = await User.findOne({ email });
 
-    const logoDoc = await Logo.findOne({}).lean();
+    //const logoDoc = await Logo.findOne({}).lean();
 
     // 🔁 UPDATE EXISTING USER
     if (user) {
@@ -131,7 +131,7 @@ router.post('/mobile-signup', async (req, res) => {
         success: true,
         isNewUser: false,
         message: 'User profile updated successfully',
-        logoUrl: logoDoc?.logoUrl || null,
+        //logoUrl: logoDoc?.logoUrl || null,
         data: user
       });
     }
@@ -154,7 +154,7 @@ router.post('/mobile-signup', async (req, res) => {
       success: true,
       isNewUser: true,
       message: 'User registered successfully',
-      logoUrl: logoDoc?.logoUrl || null,
+      //logoUrl: logoDoc?.logoUrl || null,
       data: user
     });
 
