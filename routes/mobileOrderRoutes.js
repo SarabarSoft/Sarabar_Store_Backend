@@ -18,50 +18,6 @@ const razorpay = new Razorpay({
 });
 
 // ✅ CREATE RAZORPAY ORDER
-// router.post('/create-order', async (req, res) => {
-//   try {
-//     const { userId, totalAmount } = req.body;
-
-//     if (!userId || !totalAmount) {
-//       return res.status(400).json({
-//         success: false,
-//         message: 'userId and totalAmount are required'
-//       });
-//     }
-
-//     // Check user exists
-//     const user = await User.findById(userId);
-//     if (!user) {
-//       return res.status(404).json({
-//         success: false,
-//         message: 'User not found'
-//       });
-//     }
-
-//     // Create Razorpay order
-//     const options = {
-//       amount: totalAmount * 100, // amount in paise
-//       currency: 'INR',
-//       receipt: `rcpt_${Date.now()}`,
-//     };
-
-//     const razorpayOrder = await razorpay.orders.create(options);
-
-//     return res.status(200).json({
-//       success: true,
-//       message: 'Razorpay order created successfully',
-//       data: razorpayOrder
-//     });
-
-//   } catch (error) {
-//     console.error('Create-order error:', error); // <-- log full error
-//     return res.status(500).json({
-//       success: false,
-//       message: error.message || 'Something went wrong'
-//     });
-//   }
-// });
-
 router.post('/create-order', async (req, res) => {
   try {
     const { userId, totalAmount } = req.body;
@@ -114,105 +70,7 @@ router.post('/create-order', async (req, res) => {
   }
 });
 
-
-
 // Call this AFTER successful Razorpay payment
-// router.post('/verify-payment', async (req, res) => {
-//   try {
-//     const {
-//       razorpay_order_id,
-//       razorpay_payment_id,
-//       razorpay_signature,
-//       userId,
-//       items,
-//       totalAmount,
-//       address
-//     } = req.body;
-
-//     // 🔴 Mandatory address fields
-//     if (!address?.streetArea || !address?.state || !address?.city || !address?.pincode) {
-//       return res.status(400).json({
-//         success: false,
-//         message: 'Street Area, State, City, and Pincode are mandatory'
-//       });
-//     }
-
-//     // 🔐 Signature verification
-//     const sign = razorpay_order_id + "|" + razorpay_payment_id;
-//     const expectedSign = crypto
-//       .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
-//       .update(sign)
-//       .digest('hex');
-
-//     if (expectedSign !== razorpay_signature) {
-//       return res.status(400).json({
-//         success: false,
-//         message: 'Payment verification failed'
-//       });
-//     }
-
-//     // ✅ Save order only after verification
-//     const order = await Order.create({
-//       userId,
-//       items,
-//       totalAmount,
-//       address,
-//       paymentMethod: 'ONLINE',
-//       paymentInfo: {
-//         razorpay_order_id,
-//         razorpay_payment_id
-//       },
-//       status: "PLACED"
-//     });
-
-//     // ============================
-//     // 🔔 SEND PUSH TO CUSTOMER
-//     // ============================
-//     const user = await User.findById(userId);
-
-//     if (user?.fcmToken) {
-//       await sendPush(
-//         user.fcmToken,
-//         "🎉 Payment Successful!",
-//         `Your order #${order._id} has been placed successfully.`,
-//         {
-//           orderId: order._id.toString(),
-//           type: "ORDER_PLACED"
-//         }
-//       );
-//     }
-
-//     // ============================
-//     // 🔔 SEND PUSH TO ADMIN
-//     // ============================
-//     const admins = await Admin.find({ isActive: true, fcmToken: { $ne: null } });
-
-//     for (const admin of admins) {
-//       await sendPush(
-//         admin.fcmToken,
-//         "🛒 New Order Received!",
-//         `Order #${order._id} worth ₹${totalAmount} has been placed.`,
-//         {
-//           orderId: order._id.toString(),
-//           type: "NEW_ORDER"
-//         }
-//       );
-//     }
-
-//     return res.status(201).json({
-//       success: true,
-//       message: 'Payment verified & order placed',
-//       data: order
-//     });
-
-//   } catch (error) {
-//     return res.status(500).json({
-//       success: false,
-//       message: error.message
-//     });
-//   }
-// });
-
 router.post('/verify-payment', async (req, res) => {
   try {
     const {
@@ -222,10 +80,13 @@ router.post('/verify-payment', async (req, res) => {
       userId,
       items,
       totalAmount,
-      address
+      address,
+      fcmToken // ⭐ NEW — token from frontend
     } = req.body;
 
-    // 🔴 Mandatory address validation
+    // ============================
+    // 🔴 ADDRESS VALIDATION
+    // ============================
     if (!address?.streetArea || !address?.state || !address?.city || !address?.pincode) {
       return res.status(400).json({
         success: false,
@@ -233,7 +94,9 @@ router.post('/verify-payment', async (req, res) => {
       });
     }
 
+    // ============================
     // 🔁 DUPLICATE PAYMENT CHECK
+    // ============================
     const existingOrder = await Order.findOne({
       "paymentInfo.razorpay_payment_id": razorpay_payment_id
     });
@@ -246,8 +109,11 @@ router.post('/verify-payment', async (req, res) => {
       });
     }
 
-    // 🔐 VERIFY SIGNATURE
+    // ============================
+    // 🔐 SIGNATURE VERIFICATION
+    // ============================
     const sign = razorpay_order_id + "|" + razorpay_payment_id;
+
     const expectedSign = crypto
       .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
       .update(sign)
@@ -260,7 +126,9 @@ router.post('/verify-payment', async (req, res) => {
       });
     }
 
-    // 🔐 VALIDATE AMOUNT FROM DB (ANTI-TAMPERING)
+    // ============================
+    // 🔐 AMOUNT VALIDATION
+    // ============================
     const payment = await Payment.findOne({
       razorpayOrderId: razorpay_order_id,
       userId
@@ -273,22 +141,38 @@ router.post('/verify-payment', async (req, res) => {
       });
     }
 
-    // ✅ CREATE ORDER (ONLY AFTER ALL CHECKS)
+    // ============================
+    // ✅ SAVE / UPDATE FCM TOKEN
+    // ============================
+    if (fcmToken) {
+      await User.findByIdAndUpdate(userId, { fcmToken });
+    }
+
+    // ============================
+    // ✅ CREATE ORDER
+    // ============================
     const order = await Order.create({
       userId,
       items,
       totalAmount,
       address,
       paymentMethod: 'ONLINE',
+
+      // snapshot token (optional backup)
+      fcmToken,
+
       paymentInfo: {
         razorpay_order_id,
         razorpay_payment_id,
         razorpay_signature
       },
+
       status: 'PLACED'
     });
 
+    // ============================
     // ✅ UPDATE PAYMENT STATUS
+    // ============================
     await Payment.findOneAndUpdate(
       { razorpayOrderId: razorpay_order_id },
       {
@@ -298,31 +182,47 @@ router.post('/verify-payment', async (req, res) => {
     );
 
     // ============================
-    // 🔔 PUSH TO CUSTOMER
+    // 🔔 CUSTOMER PUSH
     // ============================
     const user = await User.findById(userId);
-    if (user?.fcmToken) {
+
+    const token = fcmToken || user?.fcmToken;
+
+    if (token) {
       await sendPush(
-        user.fcmToken,
+        token,
         "🎉 Payment Successful!",
         `Your order #${order._id} has been placed successfully.`,
-        { orderId: order._id.toString(), type: "ORDER_PLACED" }
+        {
+          orderId: order._id.toString(),
+          type: "ORDER_PLACED"
+        }
       );
     }
 
     // ============================
-    // 🔔 PUSH TO ADMIN
+    // 🔔 ADMIN PUSH
     // ============================
-    const admins = await Admin.find({ isActive: true, fcmToken: { $ne: null } });
+    const admins = await Admin.find({
+      isActive: true,
+      fcmToken: { $ne: null }
+    });
+
     for (const admin of admins) {
       await sendPush(
         admin.fcmToken,
         "🛒 New Order Received!",
         `Order #${order._id} worth ₹${totalAmount} has been placed.`,
-        { orderId: order._id.toString(), type: "NEW_ORDER" }
+        {
+          orderId: order._id.toString(),
+          type: "NEW_ORDER"
+        }
       );
     }
 
+    // ============================
+    // ✅ SUCCESS RESPONSE
+    // ============================
     return res.status(201).json({
       success: true,
       message: 'Payment verified & order placed',
@@ -331,13 +231,13 @@ router.post('/verify-payment', async (req, res) => {
 
   } catch (error) {
     console.error('Verify-payment error:', error);
+
     return res.status(500).json({
       success: false,
       message: error.message
     });
   }
 });
-
 
 
 // PLACE COD ORDER
@@ -347,10 +247,13 @@ router.post('/place-cod-order', async (req, res) => {
       userId,
       items,
       totalAmount,
-      address
+      address,
+      fcmToken // ⭐ NEW
     } = req.body;
 
+    // ============================
     // 🔴 BASIC VALIDATIONS
+    // ============================
     if (!userId || !items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({
         success: false,
@@ -365,7 +268,6 @@ router.post('/place-cod-order', async (req, res) => {
       });
     }
 
-    // 🔴 ADDRESS VALIDATION
     if (!address?.streetArea || !address?.state || !address?.city || !address?.pincode) {
       return res.status(400).json({
         success: false,
@@ -373,7 +275,9 @@ router.post('/place-cod-order', async (req, res) => {
       });
     }
 
-    // 🔥 MAP qty → quantity (VERY IMPORTANT)
+    // ============================
+    // 🔥 FORMAT ITEMS
+    // ============================
     const formattedItems = items.map((item, index) => {
       if (!item.productId || !item.price) {
         throw new Error(`Invalid item at index ${index}`);
@@ -393,7 +297,16 @@ router.post('/place-cod-order', async (req, res) => {
       };
     });
 
+    // ============================
+    // ✅ SAVE / UPDATE USER FCM TOKEN
+    // ============================
+    if (fcmToken) {
+      await User.findByIdAndUpdate(userId, { fcmToken });
+    }
+
+    // ============================
     // ✅ CREATE COD ORDER
+    // ============================
     const order = await Order.create({
       userId,
       items: formattedItems,
@@ -401,18 +314,23 @@ router.post('/place-cod-order', async (req, res) => {
       address,
       paymentMethod: 'COD',
       orderStatus: 'PLACED',
+
+      // snapshot token backup
+      fcmToken,
+
       trackingId: '',
       trackingUrl: ''
     });
 
     // ============================
-    // 🔔 PUSH TO CUSTOMER
+    // 🔔 CUSTOMER PUSH
     // ============================
     const user = await User.findById(userId);
+    const token = fcmToken || user?.fcmToken;
 
-    if (user?.fcmToken) {
+    if (token) {
       await sendPush(
-        user.fcmToken,
+        token,
         "🛒 Order Placed Successfully!",
         `Your COD order #${order._id} has been placed.`,
         {
@@ -423,7 +341,7 @@ router.post('/place-cod-order', async (req, res) => {
     }
 
     // ============================
-    // 🔔 PUSH TO ADMIN
+    // 🔔 ADMIN PUSH
     // ============================
     const admins = await Admin.find({ fcmToken: { $ne: null } });
 
@@ -439,6 +357,9 @@ router.post('/place-cod-order', async (req, res) => {
       );
     }
 
+    // ============================
+    // ✅ RESPONSE
+    // ============================
     return res.status(201).json({
       success: true,
       message: 'COD order placed successfully',
@@ -446,12 +367,15 @@ router.post('/place-cod-order', async (req, res) => {
     });
 
   } catch (error) {
+    console.error('COD order error:', error);
+
     return res.status(500).json({
       success: false,
       message: error.message
     });
   }
 });
+
 
 // 🔔 TEST PUSH NOTIFICATION (User + Admin)
 router.post("/test-push", async (req, res) => {
