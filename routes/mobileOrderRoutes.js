@@ -385,6 +385,8 @@ router.post("/test-push", async (req, res) => {
     // 📲 CUSTOMER
     const user = await User.findById(userId);
 
+    console.log("USER TOKEN:", user.fcmToken);
+
     if (!user || !user.fcmToken) {
       return res.status(404).json({
         success: false,
@@ -425,7 +427,7 @@ router.post("/test-push", async (req, res) => {
 });
 
 
-// GET  ALL ORDERS LIST
+
 // 🔹 GET ALL ORDERS (LATEST FIRST)
 router.get('/list', authMiddleware,async (req, res) => {
   try {

@@ -6,19 +6,18 @@ const sendPush = async (fcmToken, title, body, data = {}) => {
 
     const message = {
       token: fcmToken,
-      notification: {
-        title,
-        body
-      },
+      notification: { title, body },
       data
     };
 
     const response = await admin.messaging().send(message);
-    console.log("Push sent:", response);
+
+    console.log("✅ Push sent:", response);
+
     return response;
 
   } catch (error) {
-    console.error("Push error:", error.message);
+    console.error("❌ Push error FULL:", error);
   }
 };
 
