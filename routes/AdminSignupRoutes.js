@@ -189,11 +189,7 @@ router.post("/signup-new", upload.single("logo"), async (req, res) => {
 
 
 
-router.put(
-  "/update-store/:adminId",
-  authMiddleware,
-  upload.single("logo"),
-  async (req, res) => {
+router.put("/update-store/:adminId",authMiddleware,upload.single("logo"),async (req, res) => {
     try {
       const { adminId } = req.params;
       const { storeName, mobile, currency, timeZone } = req.body;
@@ -237,7 +233,7 @@ router.put(
       store.storeName = storeName ?? store.storeName;
       store.mobile = mobile ?? store.mobile;
       store.currency = currency ?? store.currency;
-      store.timeZone = timeZone ?? store.timeZone;
+      //store.timestamps = timeZone ?? store.timeZone;
       store.logoUrl = logoUrl;
       store.logoPublicId = logoPublicId;
 

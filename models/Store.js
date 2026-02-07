@@ -2,6 +2,11 @@ const mongoose = require('mongoose');
 
 const StoreSchema = new mongoose.Schema(
   {
+    adminId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Admin",
+      required: true
+    },
     storeName: String,
     mobile: String,
     email: String,
