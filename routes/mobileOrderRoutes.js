@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
+const mongoose = require('mongoose');
 
 const Order = require('../models/mobileOrders');
 const User = require('../models/mobileUser');
@@ -628,6 +629,7 @@ router.put('/update-cancel-return', async (req, res) => {
       actionBy         // CUSTOMER / ADMIN / SYSTEM
     } = req.body;
 
+    // ✅ Basic validation
     if (!orderId || !status) {
       return res.status(400).json({
         success: false,
@@ -635,21 +637,43 @@ router.put('/update-cancel-return', async (req, res) => {
       });
     }
 
-    if (!['CANCELLED', 'RETURNED'].includes(status)) {
+    // ✅ Validate Mongo ID
+    if (!mongoose.Types.ObjectId.isValid(orderId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid orderId'
+      });
+    }
+
+    // ✅ Allowed statuses
+    const allowedStatuses = ['CANCELLED', 'RETURNED'];
+    if (!allowedStatuses.includes(status)) {
       return res.status(400).json({
         success: false,
         message: 'Status must be CANCELLED or RETURNED'
       });
     }
 
+    // ✅ Allowed action types
+    const allowedActions = ['CUSTOMER', 'ADMIN', 'SYSTEM'];
+    const action = allowedActions.includes(actionBy)
+      ? actionBy
+      : 'ADMIN';
+
+    // ✅ Update order
     const order = await Order.findByIdAndUpdate(
       orderId,
       {
-        order_status: status,
-        cancel_return_reason: reason || '',
-        canceled_returned_by: actionBy || 'ADMIN'
+        $set: {
+          orderStatus: status,
+          cancel_return_reason: reason || '',
+          canceled_returned_by: action
+        }
       },
-      { new: true }
+      {
+        new: true,
+        runValidators: true
+      }
     );
 
     if (!order) {
@@ -659,6 +683,9 @@ router.put('/update-cancel-return', async (req, res) => {
       });
     }
 
+    // ✅ Debug log
+    console.log('Updated order status:', order.order_status);
+
     return res.status(200).json({
       success: true,
       message: `Order ${status.toLowerCase()} successfully`,
@@ -666,12 +693,16 @@ router.put('/update-cancel-return', async (req, res) => {
     });
 
   } catch (error) {
+    console.error('Cancel/Return error:', error);
+
     return res.status(500).json({
       success: false,
-      message: error.message
+      message: 'Server error',
+      error: error.message
     });
   }
 });
+
 
 // 🔹 UPDATE TRACKING DETAILS
 router.put('/update-tracking', authMiddleware, async (req, res) => {

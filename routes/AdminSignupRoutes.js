@@ -189,12 +189,16 @@ router.post("/signup-new", upload.single("logo"), async (req, res) => {
 
 
 
-router.put("/update-store/:adminId",authMiddleware,upload.single("logo"),async (req, res) => {
+router.put(
+  "/update-store/:adminId",
+  authMiddleware,
+  upload.single("logo"),
+  async (req, res) => {
     try {
       const { adminId } = req.params;
       const { storeName, mobile, currency, timeZone } = req.body;
 
-      // 1️⃣ Find admin
+      // ✅ Find admin
       const admin = await Admin.findById(adminId);
       if (!admin) {
         return res.status(404).json({
@@ -203,7 +207,7 @@ router.put("/update-store/:adminId",authMiddleware,upload.single("logo"),async (
         });
       }
 
-      // 2️⃣ Find linked store
+      // ✅ Find store
       const store = await Store.findOne({ adminId: admin._id });
       if (!store) {
         return res.status(404).json({
@@ -215,7 +219,7 @@ router.put("/update-store/:adminId",authMiddleware,upload.single("logo"),async (
       let logoUrl = store.logoUrl;
       let logoPublicId = store.logoPublicId;
 
-      // 3️⃣ Replace logo if uploaded
+      // ✅ Logo replace
       if (req.file) {
         if (store.logoPublicId) {
           await cloudinary.uploader.destroy(store.logoPublicId);
@@ -229,23 +233,46 @@ router.put("/update-store/:adminId",authMiddleware,upload.single("logo"),async (
         logoPublicId = uploaded.public_id;
       }
 
-      // 4️⃣ Update store fields
-      store.storeName = storeName ?? store.storeName;
-      store.mobile = mobile ?? store.mobile;
-      store.currency = currency ?? store.currency;
-      //store.timestamps = timeZone ?? store.timeZone;
+      // =========================
+      // ✅ UPDATE STORE
+      // =========================
+
+      if (storeName !== undefined) store.storeName = storeName;
+      if (mobile !== undefined) store.mobile = mobile;
+      if (currency !== undefined) store.currency = currency;
+      if (timeZone !== undefined) store.timeZone = timeZone;
+
       store.logoUrl = logoUrl;
       store.logoPublicId = logoPublicId;
 
+      // =========================
+      // ✅ UPDATE ADMIN
+      // =========================
+
+      if (storeName !== undefined) admin.storeName = storeName; // adjust field name if needed
+      if (mobile !== undefined) admin.mobile = mobile;
+      admin.logoUrl = logoUrl;
+      admin.logoPublicId = logoPublicId;
+
+      // =========================
+      // SAVE BOTH
+      // =========================
+
+      await admin.save();
       await store.save();
 
       return res.status(200).json({
         success: true,
-        message: "Store updated successfully",
-        data: store
+        message: "Store & Admin updated successfully",
+        data: {
+          admin,
+          store
+        }
       });
 
     } catch (err) {
+      console.error("Update error:", err);
+
       return res.status(500).json({
         success: false,
         message: err.message
@@ -253,6 +280,7 @@ router.put("/update-store/:adminId",authMiddleware,upload.single("logo"),async (
     }
   }
 );
+
 
 
 
