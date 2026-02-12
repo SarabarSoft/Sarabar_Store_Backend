@@ -5,6 +5,7 @@ const cloudinary = require("../config/cloudinary");
 const multer = require("multer");
 const fs = require("fs");
 const mongoose = require('mongoose');
+const { PRODUCT_LIMIT } = require("../config/limits");
 
 // Multer setup for file uploads
 const storage = multer.diskStorage({});
@@ -37,6 +38,20 @@ router.post('/add', async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Invalid sub_categoryId'
+      });
+    }
+
+    // ✅ PRODUCT LIMIT CHECK (per category)
+    const productCount = await Product.countDocuments({
+      categoryId: new mongoose.Types.ObjectId(categoryId),
+    });
+
+    console.log("Product count:", productCount);
+
+    if (productCount >= PRODUCT_LIMIT) {
+      return res.status(403).json({
+        success: false,
+        message: `Product limit reached (${PRODUCT_LIMIT}). Please upgrade your plan.`,
       });
     }
 

@@ -3,6 +3,7 @@ const router = express.Router();
 const multer = require("multer");
 const cloudinary = require("../config/cloudinary");
 const Category = require("../models/Category");
+const { CATEGORY_LIMIT } = require("../config/limits");
 
 // Multer setup for file uploads
 const storage = multer.diskStorage({});
@@ -22,6 +23,16 @@ router.post("/", upload.single("image"), async (req, res) => {
 
     if (!req.file)
       return res.status(400).json({ message: "Image file is required" });
+
+     // ✅ Check category limit
+    const categoryCount = await Category.countDocuments();
+
+    if (categoryCount >= CATEGORY_LIMIT) {
+      return res.status(400).json({
+        success: false,
+        message: `Category limit reached (${CATEGORY_LIMIT}). Please upgrade your plan.`,
+      });
+    }
 
     // Upload to Cloudinary
     const result = await cloudinary.uploader.upload(req.file.path, {
