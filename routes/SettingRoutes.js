@@ -68,4 +68,34 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Delivery Cost Setting
+router.put('/delivery-settings', async (req, res) => {
+  try {
+    const { deliveryCharge, freeDeliveryAbove } = req.body;
+
+    let settings = await Setting.findOne();
+
+    if (!settings) {
+      settings = new Setting();
+    }
+
+    settings.deliveryCharge = deliveryCharge;
+    settings.freeDeliveryAbove = freeDeliveryAbove;
+
+    await settings.save();
+
+    res.json({
+      success: true,
+      message: "Delivery settings updated",
+      data: settings
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message
+    });
+  }
+});
+
 module.exports = router;

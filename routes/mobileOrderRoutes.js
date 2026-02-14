@@ -9,7 +9,7 @@ const User = require('../models/mobileUser');
 const sendPush = require("../utils/sendPush");
 const Admin = require("../models/AdminSignup");
 const Payment = require('../models/Payment');
-
+const Setting = require("../models/Setting");
 const authMiddleware = require('../middleware/authtoken');
 
 // 🔑 Initialize Razorpay
@@ -379,8 +379,6 @@ router.post('/place-cod-order', async (req, res) => {
 });
 
 
-
-
 // 🔹 GET ALL ORDERS (LATEST FIRST)
 router.get('/list', authMiddleware,async (req, res) => {
   try {
@@ -531,44 +529,30 @@ router.get('/:orderId', authMiddleware, async (req, res) => {
       });
     }
 
-    const formattedOrder = {
-      _id: order._id,
-      user: order.userId,
-      totalAmount: order.totalAmount,
-      address: order.address,
-      paymentMethod: order.paymentMethod,
-      paymentInfo: order.paymentInfo,
-      orderStatus: order.orderStatus,
-
-      // 🚚 Tracking details
-      trackingId: order.trackingId || null,
-      trackingUrl: order.trackingUrl || null,
-
-      createdAt: order.createdAt,
-      updatedAt: order.updatedAt,
-
-      items: order.items.map(item => ({
-        _id: item._id,
-        productInfo: item.productId,
-        productName: item.productName,
-        quantity: item.quantity,
-        price: item.price
-      }))
-    };
+    // ✅ Fetch delivery settings
+    const settings = await Setting.findOne();
 
     return res.status(200).json({
       success: true,
-      data: formattedOrder
+      data: {
+        order,
+        deliverySettings: {
+          deliveryCharge: settings?.deliveryCharge || 0,
+          freeDeliveryAbove: settings?.freeDeliveryAbove || 0
+        }
+      }
     });
 
   } catch (error) {
     console.error('Get order error:', error);
+
     return res.status(500).json({
       success: false,
       message: error.message
     });
   }
 });
+
 
 
 // 🔹 UPDATE CANCEL / RETURN DETAILS
