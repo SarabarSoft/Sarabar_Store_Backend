@@ -23,10 +23,33 @@ const mobileOrderSchema = new mongoose.Schema({
       price: {
         type: Number,
         required: true
+      },
+      // ✅ NEW ITEM STATUS FIELDS
+      itemStatus: {
+        type: String,
+        enum: ['PLACED','SHIPPED','DELIVERED','CANCELLED','RETURNED'],
+        default: 'PLACED'
+      },
+
+      cancel_return_reason: {
+        type: String,
+        default: ''
+      },
+      canceled_returned_by: {
+        type: String,
+        enum: ['CUSTOMER','ADMIN','SYSTEM',''],
+        default: ''
+      },
+      itemStatusUpdatedAt: {
+        type: Date,
+        default: Date.now
       }
-    }
+
+    },
+    
   ],
 
+  
   totalAmount: {
     type: Number,
     required: true

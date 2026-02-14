@@ -576,57 +576,35 @@ router.put('/update-cancel-return', async (req, res) => {
   try {
     const {
       orderId,
-      status,          // CANCELLED or RETURNED
+      productId,
+      status,     // CANCELLED / RETURNED
       reason,
-      actionBy         // CUSTOMER / ADMIN / SYSTEM
+      actionBy
     } = req.body;
 
-    // ✅ Basic validation
-    if (!orderId || !status) {
+    // ✅ Validation
+    if (!orderId || !productId || !status) {
       return res.status(400).json({
         success: false,
-        message: 'orderId and status are required'
+        message: 'orderId, productId and status required'
       });
     }
 
-    // ✅ Validate Mongo ID
-    if (!mongoose.Types.ObjectId.isValid(orderId)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid orderId'
-      });
-    }
-
-    // ✅ Allowed statuses
     const allowedStatuses = ['CANCELLED', 'RETURNED'];
     if (!allowedStatuses.includes(status)) {
       return res.status(400).json({
         success: false,
-        message: 'Status must be CANCELLED or RETURNED'
+        message: 'Invalid status'
       });
     }
 
-    // ✅ Allowed action types
     const allowedActions = ['CUSTOMER', 'ADMIN', 'SYSTEM'];
     const action = allowedActions.includes(actionBy)
       ? actionBy
       : 'ADMIN';
 
-    // ✅ Update order
-    const order = await Order.findByIdAndUpdate(
-      orderId,
-      {
-        $set: {
-          orderStatus: status,
-          cancel_return_reason: reason || '',
-          canceled_returned_by: action
-        }
-      },
-      {
-        new: true,
-        runValidators: true
-      }
-    );
+    // ✅ Find order
+    const order = await Order.findById(orderId);
 
     if (!order) {
       return res.status(404).json({
@@ -635,22 +613,39 @@ router.put('/update-cancel-return', async (req, res) => {
       });
     }
 
-    // ✅ Debug log
-    console.log('Updated order status:', order.order_status);
+    // ✅ Find product inside order
+    const item = order.items.find(
+      i => i.productId.toString() === productId
+    );
 
-    return res.status(200).json({
+    if (!item) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product not found in order'
+      });
+    }
+
+    // ✅ Update item
+    item.itemStatus = status;
+    item.cancel_return_reason = reason || '';
+    item.canceled_returned_by = action;
+
+    await order.save();
+
+    console.log("Updated item:", item);
+
+    return res.json({
       success: true,
-      message: `Order ${status.toLowerCase()} successfully`,
+      message: `Item ${status.toLowerCase()} successfully`,
       data: order
     });
 
   } catch (error) {
-    console.error('Cancel/Return error:', error);
+    console.error("Item cancel/return error:", error);
 
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
-      message: 'Server error',
-      error: error.message
+      message: error.message
     });
   }
 });
@@ -758,7 +753,7 @@ router.post("/test-push", async (req, res) => {
 
   const user = await User.findById(req.body.userId);
 
-  console.log("USER:", user);
+  //console.log("USER:", user);
 
   await sendPush(
     user.fcmToken,
