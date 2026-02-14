@@ -30,7 +30,7 @@ router.post("/add", async (req, res) => {
     console.log("Subcategory count for this category:", subcategoryCount);
     
     if (subcategoryCount >= SUBCATEGORY_LIMIT) {
-      return res.status(200).json({
+      return res.status(400).json({
         success: false,
         message: `Subcategory limit reached (${SUBCATEGORY_LIMIT}). Please upgrade your plan.`,
       });
