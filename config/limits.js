@@ -1,5 +1,5 @@
 module.exports = {
   CATEGORY_LIMIT: 5,
   SUBCATEGORY_LIMIT: 25,
-  PRODUCT_LIMIT: 150,
+  PRODUCT_LIMIT: 5, //150
 };
