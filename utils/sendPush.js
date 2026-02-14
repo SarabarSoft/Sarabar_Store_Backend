@@ -1,23 +1,21 @@
 const admin = require("../config/firebase");
 
-const sendPush = async (fcmToken, title, body, data = {}) => {
+const sendPush = async (token, title, body, data = {}) => {
   try {
-    if (!fcmToken) return;
-
     const message = {
-      token: fcmToken,
-      notification: { title, body },
-      data
+      token,
+      notification: {
+        title,
+        body,
+      },
+      data,
     };
 
     const response = await admin.messaging().send(message);
 
-    console.log("✅ Push sent:", response);
-
-    return response;
-
+    console.log("Push sent:", response);
   } catch (error) {
-    console.error("❌ Push error FULL:", error);
+    console.error("Push error:", error);
   }
 };
 

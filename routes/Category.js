@@ -28,7 +28,7 @@ router.post("/", upload.single("image"), async (req, res) => {
     const categoryCount = await Category.countDocuments();
 
     if (categoryCount >= CATEGORY_LIMIT) {
-      return res.status(400).json({
+      return res.status(403).json({
         success: false,
         message: `Category limit reached (${CATEGORY_LIMIT}). Please upgrade your plan.`,
       });

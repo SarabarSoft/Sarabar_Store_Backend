@@ -18,6 +18,7 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET
 });
 
+
 // ✅ CREATE RAZORPAY ORDER
 router.post('/create-order', async (req, res) => {
   try {
@@ -377,55 +378,6 @@ router.post('/place-cod-order', async (req, res) => {
   }
 });
 
-
-// 🔔 TEST PUSH NOTIFICATION (User + Admin)
-router.post("/test-push", async (req, res) => {
-  try {
-    const { userId } = req.body;
-
-    // 📲 CUSTOMER
-    const user = await User.findById(userId);
-
-    console.log("USER TOKEN:", user.fcmToken);
-
-    if (!user || !user.fcmToken) {
-      return res.status(404).json({
-        success: false,
-        message: "User or FCM token not found"
-      });
-    }
-
-    await sendPush(
-      user.fcmToken,
-      "🔔 Test Notification",
-      "Push notification is working for customer!",
-      { type: "TEST_USER_PUSH" }
-    );
-
-    // 🛒 ADMIN
-    const admins = await Admin.find({ isActive: true, fcmToken: { $ne: null } });
-
-    for (const admin of admins) {
-      await sendPush(
-        admin.fcmToken,
-        "🔔 Test Notification",
-        "Push notification is working for admin!",
-        { type: "TEST_ADMIN_PUSH" }
-      );
-    }
-
-    return res.json({
-      success: true,
-      message: "Push notification sent to user & admin successfully"
-    });
-
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-});
 
 
 
@@ -800,5 +752,22 @@ router.get('/user/:userId', async (req, res) => {
 
 
 
+// 🔔 TEST PUSH NOTIFICATION (User + Admin)
+router.post("/test-push", async (req, res) => {
+  console.log("➡ test-push route hit",req.body.userId);
+
+  const user = await User.findById(req.body.userId);
+
+  console.log("USER:", user);
+
+  await sendPush(
+    user.fcmToken,
+    "Hello 👋",
+    "Push notification working!",
+    { type: "TEST" }
+  );
+
+  res.json({ success: true });
+});
 
 module.exports = router;

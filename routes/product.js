@@ -49,7 +49,7 @@ router.post('/add', async (req, res) => {
     console.log("Product count:", productCount);
 
     if (productCount >= PRODUCT_LIMIT) {
-      return res.status(400).json({
+      return res.status(403).json({
         success: false,
         message: `Product limit reached (${PRODUCT_LIMIT}). Please upgrade your plan.`,
       });
