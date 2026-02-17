@@ -25,7 +25,8 @@ router.post("/add", async (req, res) => {
     }
 
     // ✅ Check subcategory limit per category
-    const subcategoryCount = await Subcategory.countDocuments({ categoryId });
+    //const subcategoryCount = await Subcategory.countDocuments({ categoryId });
+    const subcategoryCount = await Subcategory.countDocuments();
 
     console.log("Subcategory count for this category:", subcategoryCount);
     

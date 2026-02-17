@@ -42,9 +42,11 @@ router.post('/add', async (req, res) => {
     }
 
     // ✅ PRODUCT LIMIT CHECK (per category)
-    const productCount = await Product.countDocuments({
-      categoryId: new mongoose.Types.ObjectId(categoryId),
-    });
+    // const productCount = await Product.countDocuments({
+    //   categoryId: new mongoose.Types.ObjectId(categoryId),
+    // });
+
+    const productCount = await Product.countDocuments();
 
     console.log("Product count:", productCount);
 
