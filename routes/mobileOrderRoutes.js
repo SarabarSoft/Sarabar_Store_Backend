@@ -516,7 +516,7 @@ router.get('/:orderId', authMiddleware, async (req, res) => {
   try {
     const order = await Order
       .findById(req.params.orderId)
-      .populate('user', 'fullName email mobile')
+      .populate('userId', 'fullName email mobile')
       .populate({
         path: 'items.productId',
         select: '-__v -createdAt -updatedAt'
