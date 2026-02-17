@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const mobileOrderSchema = new mongoose.Schema({
-  userId: {
+  user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'MobileUser',
     required: true
