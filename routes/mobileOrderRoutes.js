@@ -397,7 +397,7 @@ router.get('/list', authMiddleware,async (req, res) => {
         console.log(item);
         if (item.itemStatus === "RETURNED") returnedCount++;
         if (item.itemStatus === "CANCELLED") cancelledCount++;
-        if (item.itemStatus === "PLACED" && order.orderStatus === "DELIVERED") deliveredCount++;
+        if (item.itemStatus === "DELIVERED") deliveredCount++;
       });
 
       // attach new keys
@@ -462,6 +462,12 @@ router.put('/update-status', async (req, res) => {
     // 🔹 UPDATE STATUS
     order.orderStatus = orderStatus;
     order.statusUpdatedAt = new Date();
+
+    // ⭐ NEW — sync all item statuses
+    order.items.forEach(item => {
+      item.itemStatus = orderStatus;
+    });
+
     await order.save();
 
     // Temporary fields to confirm push status
