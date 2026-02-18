@@ -472,7 +472,7 @@ router.delete("/:id", async (req, res) => {
       return res.json({
         success: true,
         message:
-          "Category and unused products deleted. Ordered products preserved.",
+          "Category and Unused products deleted. Ordered products were not removed.",
       });
     }
 
@@ -480,7 +480,7 @@ router.delete("/:id", async (req, res) => {
     res.json({
       success: true,
       message:
-        "Unused products deleted. Products used in orders were preserved.",
+        "Unused products deleted. Ordered products were not removed.",
     });
 
   } catch (err) {
