@@ -5,6 +5,7 @@ const cloudinary = require("../config/cloudinary");
 const Category = require("../models/Category");
 const { CATEGORY_LIMIT } = require("../config/limits");
 const Subcategory = require("../models/Subcategory");
+const Product = require("../models/Product");
 
 // Multer setup for file uploads
 const storage = multer.diskStorage({});
