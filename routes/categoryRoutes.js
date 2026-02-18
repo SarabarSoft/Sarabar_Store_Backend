@@ -89,12 +89,7 @@ router.delete("/:id", async (req, res) => {
       return res.status(404).json({ message: "Category not found" });
     }
 
-    // 2️⃣ cascade delete subcategories
-    await Subcategory.deleteMany({ categoryId });
-
-    return res.status(200).json({
-      message: "Category and related subcategories deleted successfully"
-    });
+    return res.status(200).json({ message: "Category deleted successfully" });
 
   } catch (err) {
     return res.status(500).json({ message: "Server error", error: err.message });
