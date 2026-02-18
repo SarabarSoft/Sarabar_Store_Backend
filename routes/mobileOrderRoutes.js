@@ -387,6 +387,21 @@ router.get('/list', authMiddleware,async (req, res) => {
       .populate('userId', 'fullName email mobile') // optional
       .sort({ createdAt: -1 }); // 🔥 latest first
 
+      // ✅ Add counts to existing order objects
+    orders.forEach(order => {
+      let returnedCount = 0;
+      let cancelledCount = 0;
+
+      order.items?.forEach(item => {
+        if (item.status === "returned") returnedCount++;
+        if (item.status === "cancelled") cancelledCount++;
+      });
+
+      // attach new keys
+      order._doc.returnedItemCount = returnedCount;
+      order._doc.cancelledItemCount = cancelledCount;
+    });
+    
     return res.status(200).json({
       success: true,
       count: orders.length,
