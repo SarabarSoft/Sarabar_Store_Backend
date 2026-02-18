@@ -220,6 +220,30 @@ router.delete("/:id", async (req, res) => {
     const subcategories = await Subcategory.find({ categoryId });
     const subIds = subcategories.map(sub => sub._id);
 
+    // 4️⃣ Find products to clean Cloudinary images
+    const products = await Product.find({
+      $or: [
+        { categoryId },
+        { sub_categoryId: { $in: subIds } }
+      ]
+    });
+
+    // 5️⃣ Delete product images from Cloudinary
+    for (const product of products) {
+      const images = [
+        product.image_url1_public_id,
+        product.image_url2_public_id,
+        product.image_url3_public_id,
+        product.image_url4_public_id
+      ];
+
+      for (const publicId of images) {
+        if (publicId) {
+          await cloudinary.uploader.destroy(publicId);
+        }
+      }
+    }
+    
     // 4️⃣ Delete products linked to category OR subcategories
     await Product.deleteMany({
       $or: [
