@@ -391,17 +391,20 @@ router.get('/list', authMiddleware,async (req, res) => {
     orders.forEach(order => {
       let returnedCount = 0;
       let cancelledCount = 0;
+      let deliveredCount = 0;
 
       order.items?.forEach(item => {
-        if (item.status === "returned") returnedCount++;
-        if (item.status === "cancelled") cancelledCount++;
+        if (item.itemStatus === "RETURNED") returnedCount++;
+        if (item.itemStatus === "CANCELLED") cancelledCount++;
+        if (item.itemStatus === "DELIVERED") deliveredCount++;
       });
 
       // attach new keys
       order._doc.returnedItemCount = returnedCount;
       order._doc.cancelledItemCount = cancelledCount;
+      order._doc.deliveredItemCount = deliveredCount;
     });
-    
+
     return res.status(200).json({
       success: true,
       count: orders.length,
