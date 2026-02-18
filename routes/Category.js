@@ -4,6 +4,7 @@ const multer = require("multer");
 const cloudinary = require("../config/cloudinary");
 const Category = require("../models/Category");
 const { CATEGORY_LIMIT } = require("../config/limits");
+const Subcategory = require("../models/Subcategory");
 
 // Multer setup for file uploads
 const storage = multer.diskStorage({});
@@ -193,6 +194,9 @@ router.delete("/:id/image", async (req, res) => {
  */
 router.delete("/:id", async (req, res) => {
   try {
+
+    const categoryId = req.params.id;
+
     // 1️⃣ Find category first
     const category = await Category.findById(req.params.id);
 
@@ -210,12 +214,28 @@ router.delete("/:id", async (req, res) => {
       await cloudinary.uploader.destroy(publicId);
     }
 
-    // 3️⃣ Delete category from DB
-    await Category.findByIdAndDelete(req.params.id);
+    // 3️⃣ Find related subcategories
+    const subcategories = await Subcategory.find({ categoryId });
+    const subIds = subcategories.map(sub => sub._id);
+
+    // 4️⃣ Delete products linked to category OR subcategories
+    await Product.deleteMany({
+      $or: [
+        { categoryId },
+        { sub_categoryId: { $in: subIds } }
+      ]
+    });
+
+    // 5️⃣ Delete subcategories
+    await Subcategory.deleteMany({ categoryId });
+
+    // 6️⃣ Delete category
+    await Category.findByIdAndDelete(categoryId);
+
 
     res.json({
       success: true,
-      message: "Category and image deleted successfully",
+      message: "Category, related subcategories, and products deleted successfully",
     });
   } catch (err) {
     console.error(err);
