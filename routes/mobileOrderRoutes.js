@@ -394,7 +394,7 @@ router.get('/list', authMiddleware,async (req, res) => {
       let deliveredCount = 0;
 
       order.items?.forEach(item => {
-        console.log(item);
+        
         if (item.itemStatus === "RETURNED") returnedCount++;
         if (item.itemStatus === "CANCELLED") cancelledCount++;
         if (item.itemStatus === "DELIVERED") deliveredCount++;
@@ -735,7 +735,8 @@ router.get('/user/:userId', async (req, res) => {
         _id: item._id,
         quantity: item.quantity,
         price: item.price,
-        product: item.productId
+        product: item.productId,
+        itemStatus: item.itemStatus
       }))
     }));
 
