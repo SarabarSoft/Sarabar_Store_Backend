@@ -394,9 +394,10 @@ router.get('/list', authMiddleware,async (req, res) => {
       let deliveredCount = 0;
 
       order.items?.forEach(item => {
+        console.log(item);
         if (item.itemStatus === "RETURNED") returnedCount++;
         if (item.itemStatus === "CANCELLED") cancelledCount++;
-        if (item.itemStatus === "DELIVERED") deliveredCount++;
+        if (item.itemStatus === "PLACED" && order.orderStatus === "DELIVERED") deliveredCount++;
       });
 
       // attach new keys
