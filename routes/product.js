@@ -41,10 +41,6 @@ router.post('/add', async (req, res) => {
       });
     }
 
-    // ✅ PRODUCT LIMIT CHECK (per category)
-    // const productCount = await Product.countDocuments({
-    //   categoryId: new mongoose.Types.ObjectId(categoryId),
-    // });
 
     const productCount = await Product.countDocuments();
 
@@ -62,9 +58,9 @@ router.post('/add', async (req, res) => {
       size,
       product_details,
       categoryId: new mongoose.Types.ObjectId(categoryId),
-      sub_categoryId: sub_categoryId
-        ? new mongoose.Types.ObjectId(sub_categoryId)
-        : null,
+      ...(sub_categoryId && {
+        sub_categoryId: new mongoose.Types.ObjectId(sub_categoryId),
+      }),
       mrp,
       store_price,
       offer,

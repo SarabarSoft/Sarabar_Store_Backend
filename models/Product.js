@@ -14,7 +14,7 @@ const productSchema = new mongoose.Schema({
    sub_categoryId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Subcategory', // 🔹 important
-      required: true
+      required: false
     },
   mrp: Number,
   store_price: Number,
