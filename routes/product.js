@@ -6,6 +6,7 @@ const multer = require("multer");
 const fs = require("fs");
 const mongoose = require('mongoose');
 const { PRODUCT_LIMIT } = require("../config/limits");
+const MobileOrder = require("../models/mobileOrders");
 
 // Multer setup for file uploads
 const storage = multer.diskStorage({});
@@ -294,26 +295,87 @@ router.get('/:id', async (req, res) => {
  * DELETE PRODUCT + ALL IMAGES
  * DELETE /api/products/:id
  */
+// router.delete('/:id', async (req, res) => {
+//   try {
+//     // 1️⃣ Find product first
+//     const product = await Product.findById(req.params.id);
+
+//     if (!product)
+//       return res.status(404).json({
+//         success: false,
+//         message: 'Product not found'
+//       });
+
+//     // 2️⃣ Collect all image public_ids
+//     const imagePublicIds = [
+//       product.image_url1_public_id,
+//       product.image_url2_public_id,
+//       product.image_url3_public_id,
+//       product.image_url4_public_id
+//     ].filter(Boolean); // remove null/undefined
+
+//     // 3️⃣ Delete all images from Cloudinary
+//     if (imagePublicIds.length > 0) {
+//       await Promise.all(
+//         imagePublicIds.map(publicId =>
+//           cloudinary.uploader.destroy(publicId)
+//         )
+//       );
+//     }
+
+//     // 4️⃣ Delete product from DB
+//     await Product.findByIdAndDelete(req.params.id);
+
+//     res.json({
+//       success: true,
+//       message: 'Product and images deleted successfully'
+//     });
+
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({
+//       success: false,
+//       message: error.message
+//     });
+//   }
+// });
+
 router.delete('/:id', async (req, res) => {
   try {
-    // 1️⃣ Find product first
-    const product = await Product.findById(req.params.id);
+    const productId = req.params.id;
 
-    if (!product)
+    // 1️⃣ Find product
+    const product = await Product.findById(productId);
+
+    if (!product) {
       return res.status(404).json({
         success: false,
         message: 'Product not found'
       });
+    }
 
-    // 2️⃣ Collect all image public_ids
+    // 2️⃣ Check if product is used in any order
+    const orderExists = await MobileOrder.exists({
+      "items.productId": productId
+    });
+
+    if (orderExists) {
+      return res.status(400).json({
+        success: false,
+        message:
+          'Cannot delete this product because it is used in customer orders.'
+      });
+    }
+
+    // 3️⃣ Collect image public_ids
     const imagePublicIds = [
       product.image_url1_public_id,
       product.image_url2_public_id,
       product.image_url3_public_id,
       product.image_url4_public_id
-    ].filter(Boolean); // remove null/undefined
+    ].filter(Boolean);
 
-    // 3️⃣ Delete all images from Cloudinary
+    // 4️⃣ Delete images from Cloudinary
     if (imagePublicIds.length > 0) {
       await Promise.all(
         imagePublicIds.map(publicId =>
@@ -322,12 +384,12 @@ router.delete('/:id', async (req, res) => {
       );
     }
 
-    // 4️⃣ Delete product from DB
-    await Product.findByIdAndDelete(req.params.id);
+    // 5️⃣ Delete product
+    await Product.findByIdAndDelete(productId);
 
     res.json({
       success: true,
-      message: 'Product and images deleted successfully'
+      message: 'Product deleted successfully.'
     });
 
   } catch (error) {
