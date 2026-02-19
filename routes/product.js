@@ -176,7 +176,24 @@ router.post(
 ====================================================== */
 router.get('/all', async (req, res) => {
   try {
-    const products = await Product.find().sort({ createdAt: -1 });
+    //const products = await Product.find().sort({ createdAt: -1 });
+
+    const products = await Product.find()
+      .populate('categoryId', 'categoryName')
+      .populate('sub_categoryId', 'subcategoryName')
+      .sort({ createdAt: -1 });
+
+    //   const formatted = products.map(p => ({
+    //   ...p.toObject(),   // 🔥 keep all existing product fields
+    //   categoryName: p.categoryId?.categoryName || null,
+    //   subcategoryName: p.sub_categoryId?.subcategoryName || null
+    // }));
+
+    // res.json({
+    //   success: true,
+    //   count: formatted.length,
+    //   data: formatted
+    // });
 
     res.json({
       success: true,
