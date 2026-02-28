@@ -676,8 +676,7 @@ router.put('/update-tracking', authMiddleware, async (req, res) => {
       orderId,
       {
         trackingId: trackingId,
-        trackingUrl: trackingUrl || '',
-        orderStatus: 'SHIPPED'
+        trackingUrl: trackingUrl || ''
       },
       { new: true }
     );
