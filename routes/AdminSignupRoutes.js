@@ -220,11 +220,36 @@ router.put(
       let logoPublicId = store.logoPublicId;
 
       // ✅ Logo replace
+      // if (req.file) {
+      //   if (store.logoPublicId) {
+      //     await cloudinary.uploader.destroy(store.logoPublicId);
+      //   }
+
+      //   const uploaded = await cloudinary.uploader.upload(req.file.path, {
+      //     folder: "stores"
+      //   });
+
+      //   logoUrl = uploaded.secure_url;
+      //   logoPublicId = uploaded.public_id;
+      // }
+
+      // =========================
+      // ✅ DELETE ALL IMAGES IN "stores" FOLDER
+      // =========================
       if (req.file) {
-        if (store.logoPublicId) {
-          await cloudinary.uploader.destroy(store.logoPublicId);
+        const resources = await cloudinary.api.resources({
+          type: "upload",
+          prefix: "stores/",
+          max_results: 100
+        });
+
+        if (resources.resources.length > 0) {
+          const publicIds = resources.resources.map(r => r.public_id);
+
+          await cloudinary.api.delete_resources(publicIds);
         }
 
+        // ✅ Upload new logo
         const uploaded = await cloudinary.uploader.upload(req.file.path, {
           folder: "stores"
         });
