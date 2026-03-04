@@ -95,7 +95,7 @@ router.get('/group-by-category', async (req, res) => {
           products: { $slice: ["$products", 5] }
         }
       },
-      
+
       { $sort: { categoryName: 1 } }
     ]);
 
@@ -133,7 +133,8 @@ router.get('/:id', async (req, res) => {
       _id: { $ne: product._id }
     })
       .populate('categoryId', 'categoryName imageUrl')
-      .populate('sub_categoryId', 'subcategoryName');
+      .populate('sub_categoryId', 'subcategoryName')
+      .limit(5); 
 
     // 3️⃣ Response
     res.json({
@@ -151,9 +152,6 @@ router.get('/:id', async (req, res) => {
     });
   }
 });
-
-
-
 
 
 /* ======================================================
