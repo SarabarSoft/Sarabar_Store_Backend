@@ -87,6 +87,15 @@ router.get('/group-by-category', async (req, res) => {
         }
       },
 
+      // ✅ LIMIT TO 5 PRODUCTS PER CATEGORY
+      {
+        $project: {
+          categoryName: 1,
+          imageUrl: 1,
+          products: { $slice: ["$products", 5] }
+        }
+      },
+      
       { $sort: { categoryName: 1 } }
     ]);
 
