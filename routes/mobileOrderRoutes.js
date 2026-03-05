@@ -143,12 +143,26 @@ router.post('/verify-payment', async (req, res) => {
       });
     }
 
+     // ============================
+    // 🧹 CLEAN ITEMS (size optional)
+    // ============================
+
+    items = items.map((item) => ({
+      productId: item.productId,
+      name: item.name,
+      price: item.price,
+      quantity: item.quantity,
+      size: item.size || null // ✅ optional size
+    }));
+
+
     // ============================
     // ✅ SAVE / UPDATE FCM TOKEN
     // ============================
     if (fcmToken) {
       await User.findByIdAndUpdate(userId, { fcmToken });
     }
+
 
     // ============================
     // ✅ CREATE ORDER
@@ -295,7 +309,8 @@ router.post('/place-cod-order', async (req, res) => {
         productId: item.productId,
         productName: item.productName,
         quantity,
-        price: item.price
+        price: item.price,
+        size: item.size || null
       };
     });
 

@@ -43,6 +43,12 @@ const mobileOrderSchema = new mongoose.Schema({
       itemStatusUpdatedAt: {
         type: Date,
         default: Date.now
+      },
+      // ✅ Optional size
+      size: {
+        type: String,
+        required: false,
+        default: null
       }
 
     },
