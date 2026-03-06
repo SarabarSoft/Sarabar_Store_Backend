@@ -10,6 +10,7 @@ const sendPush = require("../utils/sendPush");
 const Admin = require("../models/AdminSignup");
 const Payment = require('../models/Payment');
 const Setting = require("../models/Setting");
+const Product = require("../models/Product");
 const authMiddleware = require('../middleware/authtoken');
 
 // 🔑 Initialize Razorpay
@@ -18,6 +19,158 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET
 });
 
+
+// VALIDATE CART ITEMS
+router.post("/validate-cart", async (req, res) => {
+  try {
+
+    const { items } = req.body;
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Cart items are required"
+      });
+    }
+
+    // collect product ids
+    const productIds = items.map(item => item.productId);
+
+    // fetch products
+    const products = await Product.find({
+      _id: { $in: productIds }
+    });
+
+    // convert to map for fast lookup
+    const productMap = {};
+    products.forEach(p => {
+      productMap[p._id.toString()] = p;
+    });
+
+    const removedItems = [];
+    const priceChangedItems = [];
+    const sizeChangedItems = [];
+    const validItems = [];
+
+    let totalAmount = 0;
+
+    for (const item of items) {
+
+      const product = productMap[item.productId];
+
+      // ==============================
+      // PRODUCT REMOVED
+      // ==============================
+      if (!product) {
+        removedItems.push({
+          productId: item.productId,
+          message: "Product no longer available"
+        });
+        continue;
+      }
+
+      let selectedSize = item.size || null;
+
+      // ==============================
+      // SIZE VALIDATION
+      // ==============================
+      if (product.size) {
+
+        const dbSizeFirstLetter = product.size.charAt(0).toUpperCase();
+
+        if (!item.size || item.size.toUpperCase() !== dbSizeFirstLetter) {
+
+          sizeChangedItems.push({
+            productId: item.productId,
+            oldSize: item.size || null,
+            newSize: dbSizeFirstLetter,
+            message: "Product size updated"
+          });
+
+          selectedSize = dbSizeFirstLetter;
+        }
+      }
+
+      // ==============================
+      // PRICE VALIDATION
+      // ==============================
+      let currentPrice = product.store_price;
+
+      if (item.price !== currentPrice) {
+
+        priceChangedItems.push({
+          productId: item.productId,
+          oldPrice: item.price,
+          newPrice: currentPrice,
+          message: "Product price updated"
+        });
+      }
+
+      const itemTotal = currentPrice * item.quantity;
+
+      totalAmount += itemTotal;
+
+      validItems.push({
+        productId: product._id,
+        productname: product.productname,
+        quantity: item.quantity,
+        price: currentPrice,
+        size: selectedSize,
+        image: product.image_url1
+      });
+    }
+
+    // ==============================
+    // GENERIC MESSAGE
+    // ==============================
+
+    let message = "Cart validated successfully";
+
+    if (removedItems.length > 0) {
+      message = "Some products were removed from your cart";
+    }
+
+    if (priceChangedItems.length > 0) {
+      message = "Some product prices have changed";
+    }
+
+    if (sizeChangedItems.length > 0) {
+      message = "Some product sizes have changed";
+    }
+
+    if (
+      removedItems.length > 0 ||
+      priceChangedItems.length > 0 ||
+      sizeChangedItems.length > 0
+    ) {
+      message = "Your cart has been updated. Please review before checkout.";
+    }
+
+    // ==============================
+    // RESPONSE
+    // ==============================
+
+    return res.status(200).json({
+      success: true,
+      message,
+      totalAmount,
+      validItems,
+      removedItems,
+      priceChangedItems,
+      sizeChangedItems
+    });
+
+  } catch (error) {
+
+    console.error("Validate cart error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+
+  }
+});
 
 // ✅ CREATE RAZORPAY ORDER
 router.post('/create-order', async (req, res) => {
@@ -592,7 +745,6 @@ router.get('/:orderId', authMiddleware, async (req, res) => {
 });
 
 
-
 // 🔹 UPDATE CANCEL / RETURN DETAILS
 router.put('/update-cancel-return', async (req, res) => {
   try {
@@ -767,6 +919,8 @@ router.get('/user/:userId', async (req, res) => {
     });
   }
 });
+
+
 
 
 
