@@ -143,18 +143,17 @@ router.post('/verify-payment', async (req, res) => {
       });
     }
 
-     // ============================
+    // ============================
     // 🧹 CLEAN ITEMS (size optional)
     // ============================
 
-    items = items.map((item) => ({
+    const cleanedItems = items.map((item) => ({
       productId: item.productId,
       name: item.name,
       price: item.price,
       quantity: item.quantity,
-      size: item.size || null // ✅ optional size
+      size: item.size || null
     }));
-
 
     // ============================
     // ✅ SAVE / UPDATE FCM TOKEN
@@ -163,13 +162,12 @@ router.post('/verify-payment', async (req, res) => {
       await User.findByIdAndUpdate(userId, { fcmToken });
     }
 
-
     // ============================
     // ✅ CREATE ORDER
     // ============================
     const order = await Order.create({
       userId,
-      items,
+      items: cleanedItems,
       totalAmount,
       address,
       paymentMethod: 'ONLINE',
@@ -395,21 +393,21 @@ router.post('/place-cod-order', async (req, res) => {
 
 
 // 🔹 GET ALL ORDERS (LATEST FIRST)
-router.get('/list', authMiddleware,async (req, res) => {
+router.get('/list', authMiddleware, async (req, res) => {
   try {
     const orders = await Order
       .find({})
       .populate('userId', 'fullName email mobile') // optional
       .sort({ createdAt: -1 }); // 🔥 latest first
 
-      // ✅ Add counts to existing order objects
+    // ✅ Add counts to existing order objects
     orders.forEach(order => {
       let returnedCount = 0;
       let cancelledCount = 0;
       let deliveredCount = 0;
 
       order.items?.forEach(item => {
-        
+
         if (item.itemStatus === "RETURNED") returnedCount++;
         if (item.itemStatus === "CANCELLED") cancelledCount++;
         if (item.itemStatus === "DELIVERED") deliveredCount++;
@@ -773,7 +771,7 @@ router.get('/user/:userId', async (req, res) => {
 
 // 🔔 TEST PUSH NOTIFICATION (User + Admin)
 router.post("/test-push", async (req, res) => {
-  console.log("➡ test-push route hit",req.body.userId);
+  console.log("➡ test-push route hit", req.body.userId);
 
   const user = await User.findById(req.body.userId);
 
