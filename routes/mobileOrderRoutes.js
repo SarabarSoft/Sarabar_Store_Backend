@@ -748,7 +748,8 @@ router.get('/user/:userId', async (req, res) => {
         quantity: item.quantity,
         price: item.price,
         product: item.productId,
-        itemStatus: item.itemStatus
+        itemStatus: item.itemStatus,
+        size: item.size || null, 
       }))
     }));
 
